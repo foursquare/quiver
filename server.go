@@ -66,11 +66,7 @@ func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 						}
 					}
 				} else {
-					fmt.Fprintln(out, "entries: ", reader.header.entryCount)
-					fmt.Fprintln(out, "blocks: ", len(reader.dataIndex.dataBlocks))
-					for i, blk := range reader.dataIndex.dataBlocks {
-						fmt.Fprintf(out, "\t#%d: %s (%v)\n", i, blk.firstKeyBytes, blk.firstKeyBytes)
-					}
+					reader.PrintDebugInfo(out)
 				}
 			}
 		}

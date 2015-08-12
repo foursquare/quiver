@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/dt/gohfile/hfile"
 	"github.com/dt/thile/gen"
 )
 
@@ -14,12 +15,12 @@ type Collection struct {
 }
 
 type CollectionSet struct {
-	readers map[string]*HfileReader
+	readers map[string]*hfile.Reader
 }
 
 func LoadCollections(collections []Collection) (*CollectionSet, error) {
 	cs := new(CollectionSet)
-	cs.readers = make(map[string]*HfileReader)
+	cs.readers = make(map[string]*hfile.Reader)
 
 	for _, config := range collections {
 
@@ -29,7 +30,7 @@ func LoadCollections(collections []Collection) (*CollectionSet, error) {
 			return nil, err
 		}
 
-		reader, err := NewHfileReader(f)
+		reader, err := hfile.NewReader(f)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +41,7 @@ func LoadCollections(collections []Collection) (*CollectionSet, error) {
 	return cs, nil
 }
 
-func (cs *CollectionSet) readerFor(c string) (*HfileReader, error) {
+func (cs *CollectionSet) readerFor(c string) (*hfile.Reader, error) {
 	reader, ok := cs.readers[c]
 	if !ok {
 		return nil, fmt.Errorf("not configured with reader for collection %s", c)

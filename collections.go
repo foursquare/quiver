@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/dt/gohfile/hfile"
 	"github.com/dt/thile/gen"
+	"github.com/paperstreet/gohfile/hfile"
 )
 
 type Collection struct {
@@ -35,7 +35,7 @@ func LoadCollections(collections []Collection) (*CollectionSet, error) {
 			return nil, err
 		}
 
-		cs.readers[config.Name] = &reader
+		cs.readers[config.Name] = reader
 	}
 
 	return cs, nil
@@ -49,9 +49,18 @@ func (cs *CollectionSet) readerFor(c string) (*hfile.Reader, error) {
 	return reader, nil
 }
 
+func (cs *CollectionSet) scannerFor(c string) (*hfile.Scanner, error) {
+	reader, err := cs.readerFor(c)
+	if err != nil {
+		return nil, err
+	}
+	s := hfile.NewScanner(reader)
+	return &s, nil
+}
+
 func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen.SingleHFileKeyResponse, err error) {
 	log.Println("[GetValuesSingle]", len(req.SortedKeys))
-	reader, err := cs.readerFor(*req.HfileName)
+	reader, err := cs.scannerFor(*req.HfileName)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +70,10 @@ func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {
-		value, ok := reader.GetFirst(key)
+		value, err, ok := reader.GetFirst(key)
+		if err != nil {
+			return nil, err
+		}
 		if ok {
 			found++
 			res.Values[int32(idx)] = value
@@ -74,7 +86,7 @@ func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 
 func (cs *CollectionSet) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.MultiHFileKeyResponse, err error) {
 	log.Println("[GetValuesMulti]", len(req.SortedKeys))
-	reader, err := cs.readerFor(*req.HfileName)
+	reader, err := cs.scannerFor(*req.HfileName)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +96,10 @@ func (cs *CollectionSet) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {
-		values := reader.GetAll(key)
+		values, err := reader.GetAll(key)
+		if err != nil {
+			return nil, err
+		}
 		if len(values) > 0 {
 			found += int32(len(values))
 			res.Values[int32(idx)] = values

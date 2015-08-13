@@ -11,6 +11,7 @@ import (
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/dt/thile/gen"
+	"github.com/paperstreet/gohfile/hfile"
 )
 
 type HttpRpcHandler struct {
@@ -50,13 +51,17 @@ func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 			if err != nil {
 				http.Error(out, err.Error(), 500)
 			} else {
+				scanner := hfile.NewScanner(reader)
 				if len(parts) > 1 {
 					key := make([]byte, len(parts[1])/2)
 					n, err := hex.Decode(key, []byte(parts[1]))
 					if err != nil {
 						http.Error(out, err.Error(), 401)
 					} else {
-						values := reader.GetAll(key)
+						values, err := scanner.GetAll(key)
+						if err != nil {
+							http.Error(out, err.Error(), 500)
+						}
 						if len(values) > 0 {
 							for _, value := range values {
 								fmt.Fprintf(out, "%s %v\n", value, value)

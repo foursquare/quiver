@@ -65,8 +65,16 @@ func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		return nil, err
 	}
 
-	//out := make(map[int32][]byte)
+	if req.PerKeyValueLimit != nil {
+		log.Println("[GetValuesSingle] PerKeyValueLimit. oh well.")
+	}
+
+	if req.CountOnly != nil {
+		log.Println("[GetValuesSingle] CountOnly. oh well.")
+	}
+
 	res := new(gen.SingleHFileKeyResponse)
+	res.Values = make(map[int32][]byte)
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {

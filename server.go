@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -78,12 +79,21 @@ func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 	}
 }
 
+type Settings struct {
+	listen int
+}
+
 func main() {
-	if len(os.Args) < 2 {
+	s := Settings{}
+	flag.IntVar(&s.listen, "port", 9999, "listen port")
+	flag.Parse()
+
+	if len(flag.Args()) < 1 {
 		log.Fatalf("usage: %s coll1=path1 coll2=path2 ...", os.Args[0])
 	}
-	collections := make([]Collection, len(os.Args)-1)
-	for i, pair := range os.Args[1:] {
+
+	collections := make([]Collection, len(flag.Args()))
+	for i, pair := range flag.Args() {
 		parts := strings.SplitN(pair, "=", 2)
 		if len(parts) != 2 {
 			log.Fatal("collections must be specified in the form'name=path'")
@@ -95,5 +105,5 @@ func main() {
 		log.Fatal(err)
 	}
 	handler := gen.NewHFileServiceProcessor(cs)
-	log.Fatal(http.ListenAndServe(":9000", &HttpRpcHandler{0, cs, handler}))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.listen), &HttpRpcHandler{0, cs, handler}))
 }

@@ -78,6 +78,7 @@ func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {
+		log.Print("[GetValuesSingle] key: %v", key)
 		value, err, ok := reader.GetFirst(key)
 		if err != nil {
 			return nil, err

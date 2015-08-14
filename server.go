@@ -33,7 +33,7 @@ func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 		iprot := thrift.NewTBinaryProtocol(in, true, true)
 
 		outbuf := thrift.NewTMemoryBuffer()
-		oprot := thrift.NewTCompactProtocol(outbuf)
+		oprot := thrift.NewTBinaryProtocol(outbuf, true, true)
 
 		ok, err := h.Process(iprot, oprot)
 
@@ -59,6 +59,7 @@ func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 					if err != nil {
 						http.Error(out, err.Error(), 401)
 					} else {
+						log.Print("[Debug] key: %v", key)
 						values, err := scanner.GetAll(key)
 						if err != nil {
 							http.Error(out, err.Error(), 500)

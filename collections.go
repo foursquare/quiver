@@ -19,7 +19,7 @@ type CollectionSet struct {
 	readers map[string]*hfile.Reader
 }
 
-func LoadCollections(collections []Collection) (*CollectionSet, error) {
+func LoadCollections(collections []Collection, lock bool) (*CollectionSet, error) {
 	cs := new(CollectionSet)
 	cs.readers = make(map[string]*hfile.Reader)
 
@@ -31,7 +31,7 @@ func LoadCollections(collections []Collection) (*CollectionSet, error) {
 			return nil, err
 		}
 
-		reader, err := hfile.NewReader(f)
+		reader, err := hfile.NewReader(config.Name, f, lock)
 		if err != nil {
 			return nil, err
 		}

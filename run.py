@@ -55,7 +55,11 @@ def run(args):
   downloaded = download(collections, args.local, args.verbose)
   pairs = ["%s=%s"%(name, local) for name, local in downloaded.iteritems()]
 
-  cmd = [args.binary] + pairs
+  mlock = []
+  if args.lock:
+    mlock = ['--mlock']
+
+  cmd = [args.binary] + mlock + pairs
 
   if args.verbose:
     print " ".join(cmd)
@@ -76,6 +80,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--verbose", "-v", action="store_true", help="verbose")
   parser.add_argument("--run", action="store_true", help="actually run it")
+  parser.add_argument("--lock", action="store_true", help="mlock")
   parser.add_argument("--binary", default="./thile", help="path to server")
   parser.add_argument("--local", default='/tmp', help="where to write local files")
   parser.add_argument("config", help="'socket' (host/port) to read configs for")

@@ -82,11 +82,13 @@ func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 
 type Settings struct {
 	listen int
+	mlock  bool
 }
 
 func main() {
 	s := Settings{}
 	flag.IntVar(&s.listen, "port", 9999, "listen port")
+	flag.BoolVar(&s.mlock, "mlock", false, "mlock mapped hfiles")
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
@@ -101,7 +103,7 @@ func main() {
 		}
 		collections[i] = Collection{parts[0], parts[1]}
 	}
-	cs, err := LoadCollections(collections)
+	cs, err := LoadCollections(collections, s.mlock)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -59,7 +59,7 @@ func (cs *CollectionSet) scannerFor(c string) (*hfile.Scanner, error) {
 }
 
 func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen.SingleHFileKeyResponse, err error) {
-	log.Println("[GetValuesSingle]", len(req.SortedKeys))
+	log.Printf("[GetValuesSingle] %s (%d keys)\n", *req.HfileName, len(req.SortedKeys))
 	reader, err := cs.scannerFor(*req.HfileName)
 	if err != nil {
 		return nil, err
@@ -88,6 +88,7 @@ func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		}
 	}
 
+	log.Printf("[GetValuesSingle] %s found %d of %d.\n", *req.HfileName, found, len(req.SortedKeys))
 	res.KeyCount = &found
 	return res, nil
 }

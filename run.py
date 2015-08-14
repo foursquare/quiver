@@ -1,36 +1,85 @@
+#!/usr/bin/env python2.7
+
+import argparse
 import hashlib
+import os
 import requests
 import subprocess
-import os
 import sys
 
 
-url = 'http://zk-web-prod/foursquare/config/hfileservice/sockets/' + sys.argv[1]
-config = requests.get(url).json()
+def lookup_collections(socket):
+  url = 'http://zk-web-prod/foursquare/config/hfileservice/sockets/' + socket
+  config = requests.get(url).json()
 
-pairs = []
+  collections = {}
 
-for v in config['collections']:
-  col = v['collection']
-  partition = v.get('partition', 0)
-  hdfs = v['path'].replace('/hdfs/hadoop-alidoro-nn-vip', '')
+  for v in config['collections']:
+    col = v['collection']
+    partition = v.get('partition', 0)
+    hdfs = v['path'].replace('/hdfs/hadoop-alidoro-nn-vip', '')
+    collections['%s/%s'%(col, partition)] = hdfs
 
-  # copy the file to local
-  local = hashlib.md5(hdfs).hexdigest()
-  local = '/tmp/' + local
+  return collections
 
-  if not os.path.exists(local):
-    print "copying "+hdfs
-    cmd = ['hadoop', 'fs', '-copyToLocal', hdfs, local]
+
+def download(collections, output, verbose):
+  downloaded = {}
+
+  print "Fetching files..."
+
+  for name, hdfs in collections.iteritems():
+    # copy the file to local
+    local = hashlib.md5(hdfs).hexdigest()
+    local = os.path.join(output, local)
+
+    if os.path.exists(local):
+      print "\t%s already exists locally."%name
+      if verbose:
+        print "\t\t"+local
+    else:
+      print "\tDownloading %s..."%name
+      cmd = ['hadoop', 'fs', '-copyToLocal', hdfs, local]
+      if args.verbose:
+        print "\t "+(" ".join(cmd))
+      subprocess.check_call(cmd)
+    downloaded[name] = local
+
+  return downloaded
+
+
+def run(args):
+  print "Looking up config for %s"%args.config
+  collections = lookup_collections(args.config)
+  print "Configured to serve:\n\t%s\n"%("\n\t".join(collections.keys()))
+  downloaded = download(collections, args.local, args.verbose)
+  pairs = ["%s=%s"%(name, local) for name, local in downloaded.iteritems()]
+
+  cmd = [args.binary] + pairs
+
+  if args.verbose:
     print " ".join(cmd)
-    subprocess.check_call(cmd)
 
-  pairs.append("%s/%s=%s"%(col, partition, local))
+  print "\n"
 
-print "\n\n"
-cmd = ['./thile'] + pairs
+  if args.run:
+    try:
+      print "Starting %s"%args.binary
+      subprocess.check_call(cmd)
+    except KeyboardInterrupt:
+      pass
+  else:
+    print "DRY RUN. To start server, re-run with --run."
 
-print cmd
 
-if len(sys.argv) > 2:
-  subprocess.check_call(cmd)
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--verbose", "-v", action="store_true", help="verbose")
+  parser.add_argument("--run", action="store_true", help="actually run it")
+  parser.add_argument("--binary", default="./thile", help="path to server")
+  parser.add_argument("--local", default='/tmp', help="where to write local files")
+  parser.add_argument("config", help="'socket' (host/port) to read configs for")
+  args = parser.parse_args()
+
+  run(args)
+

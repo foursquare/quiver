@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -78,7 +79,9 @@ func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {
-		log.Print("[GetValuesSingle] key: %v", key)
+		pretty := make([]byte, len(key)*2)
+		hex.Encode(pretty, key)
+		log.Print("[GetValuesSingle] key: %s", pretty)
 		value, err, ok := reader.GetFirst(key)
 		if err != nil {
 			return nil, err

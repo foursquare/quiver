@@ -6,6 +6,7 @@ package gen
 import (
 	"bytes"
 	"fmt"
+	"sort"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 )
@@ -547,7 +548,15 @@ func (p *SingleHFileKeyResponse) writeField1(oprot thrift.TProtocol) (err error)
 		if err := oprot.WriteMapBegin(thrift.I32, thrift.STRING, len(p.Values)); err != nil {
 			return fmt.Errorf("error writing map begin: %s", err)
 		}
-		for k, v := range p.Values {
+
+		indexes := make([]int, 0, len(p.Values))
+		for k, _ := range p.Values {
+			indexes = append(indexes, int(k))
+		}
+		sort.Ints(indexes)
+
+		for _, k := range indexes {
+			v := p.Values[int32(k)]
 			if err := oprot.WriteI32(int32(k)); err != nil {
 				return fmt.Errorf("%T. (0) field write error: %s", p, err)
 			}

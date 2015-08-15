@@ -21,7 +21,7 @@ type CollectionSet struct {
 	collections map[string]Collection
 }
 
-func LoadCollections(collections []Collection, lockAll bool) (*CollectionSet, error) {
+func LoadCollections(collections []Collection) (*CollectionSet, error) {
 	cs := new(CollectionSet)
 	cs.collections = make(map[string]Collection)
 
@@ -31,8 +31,6 @@ func LoadCollections(collections []Collection, lockAll bool) (*CollectionSet, er
 		if err != nil {
 			return nil, err
 		}
-
-		c.Mlock = c.Mlock || lockAll
 
 		reader, err := hfile.NewReader(c.Name, f, c.Mlock)
 		if err != nil {

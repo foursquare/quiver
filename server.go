@@ -13,14 +13,11 @@ import (
 
 type Settings struct {
 	listen int
-	mlock  bool
 }
 
-func main() {
+func getSettings() Settings {
 	s := Settings{}
 	flag.IntVar(&s.listen, "port", 9999, "listen port")
-	flag.BoolVar(&s.mlock, "mlock-all", false, "mlock all mapped hfiles")
-	flag.Parse()
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr,
@@ -36,12 +33,16 @@ Usage: %s [options] col1@path1 col2@path2 ...
 		flag.PrintDefaults()
 	}
 
+	flag.Parse()
 	if len(flag.Args()) < 1 {
 		flag.Usage()
 		os.Exit(-1)
 	}
+	return s
+}
 
-	collections := make([]Collection, len(flag.Args()))
+func getCollectionConfig(args []string) []Collection {
+	collections := make([]Collection, len(args))
 	for i, pair := range flag.Args() {
 		parts := strings.SplitN(pair, "=", 2)
 		mlock := true
@@ -54,8 +55,15 @@ Usage: %s [options] col1@path1 col2@path2 ...
 		}
 		collections[i] = Collection{parts[0], parts[1], mlock, nil}
 	}
+	return collections
+}
+
+func main() {
+	s := getSettings()
+	collections := getCollectionConfig(flag.Args())
+
 	log.Println("Loading collections...")
-	cs, err := LoadCollections(collections, s.mlock)
+	cs, err := LoadCollections(collections)
 	if err != nil {
 		log.Fatal(err)
 	}

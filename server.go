@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/dt/thile/gen"
+	"github.com/foursquare/gohfile"
 )
 
 type Settings struct {
@@ -43,8 +44,8 @@ Usage: %s [options] col1@path1 col2@path2 ...
 	return s
 }
 
-func getCollectionConfig(args []string) []Collection {
-	collections := make([]Collection, len(args))
+func getCollectionConfig(args []string) []hfile.CollectionConfig {
+	collections := make([]hfile.CollectionConfig, len(args))
 	for i, pair := range flag.Args() {
 		parts := strings.SplitN(pair, "=", 2)
 		mlock := true
@@ -55,17 +56,17 @@ func getCollectionConfig(args []string) []Collection {
 		if len(parts) != 2 {
 			log.Fatal("collections must be specified in the form 'name=path' or 'name@path'")
 		}
-		collections[i] = Collection{parts[0], parts[1], mlock, nil}
+		collections[i] = hfile.CollectionConfig{parts[0], parts[1], mlock}
 	}
 	return collections
 }
 
 func main() {
 	s := getSettings()
-	collections := getCollectionConfig(flag.Args())
+	configs := getCollectionConfig(flag.Args())
 
 	log.Println("Loading collections...")
-	cs, err := LoadCollections(&s, collections)
+	cs, err := LoadCollections(&s, configs)
 	if err != nil {
 		log.Fatal(err)
 	}

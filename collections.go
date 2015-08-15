@@ -4,16 +4,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/dt/thile/gen"
 	"github.com/foursquare/gohfile"
 )
 
 type Collection struct {
-	Name   string
-	Path   string
-	Mlock  bool
+	cfg    *hfile.CollectionConfig
 	reader *hfile.Reader
 }
 
@@ -22,25 +19,18 @@ type CollectionSet struct {
 	collections map[string]Collection
 }
 
-func LoadCollections(settings *Settings, collections []Collection) (*CollectionSet, error) {
+func LoadCollections(settings *Settings, collections []hfile.CollectionConfig) (*CollectionSet, error) {
 	cs := new(CollectionSet)
 	cs.settings = settings
 	cs.collections = make(map[string]Collection)
 
-	for _, c := range collections {
-		f, err := os.OpenFile(c.Path, os.O_RDONLY, 0)
-
+	for _, cfg := range collections {
+		reader, err := hfile.NewReaderFromConfig(&cfg, settings.debug)
 		if err != nil {
 			return nil, err
 		}
 
-		reader, err := hfile.NewReader(c.Name, f, c.Mlock, settings.debug)
-		if err != nil {
-			return nil, err
-		}
-
-		c.reader = reader
-		cs.collections[c.Name] = c
+		cs.collections[cfg.Name] = Collection{&cfg, reader}
 	}
 
 	return cs, nil

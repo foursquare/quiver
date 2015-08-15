@@ -34,7 +34,7 @@ func LoadCollections(settings *Settings, collections []Collection) (*CollectionS
 			return nil, err
 		}
 
-		reader, err := hfile.NewReader(c.Name, f, c.Mlock)
+		reader, err := hfile.NewReader(c.Name, f, c.Mlock, settings.debug)
 		if err != nil {
 			return nil, err
 		}

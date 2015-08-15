@@ -11,43 +11,47 @@ import (
 )
 
 type Collection struct {
-	Name string
-	Path string
+	Name   string
+	Path   string
+	Mlock  bool
+	reader *hfile.Reader
 }
 
 type CollectionSet struct {
-	readers map[string]*hfile.Reader
+	collections map[string]Collection
 }
 
-func LoadCollections(collections []Collection, lock bool) (*CollectionSet, error) {
+func LoadCollections(collections []Collection, lockAll bool) (*CollectionSet, error) {
 	cs := new(CollectionSet)
-	cs.readers = make(map[string]*hfile.Reader)
+	cs.collections = make(map[string]Collection)
 
-	for _, config := range collections {
-
-		f, err := os.OpenFile(config.Path, os.O_RDONLY, 0)
+	for _, c := range collections {
+		f, err := os.OpenFile(c.Path, os.O_RDONLY, 0)
 
 		if err != nil {
 			return nil, err
 		}
 
-		reader, err := hfile.NewReader(config.Name, f, lock)
+		c.Mlock = c.Mlock || lockAll
+
+		reader, err := hfile.NewReader(c.Name, f, c.Mlock)
 		if err != nil {
 			return nil, err
 		}
 
-		cs.readers[config.Name] = reader
+		c.reader = reader
+		cs.collections[c.Name] = c
 	}
 
 	return cs, nil
 }
 
-func (cs *CollectionSet) readerFor(c string) (*hfile.Reader, error) {
-	reader, ok := cs.readers[c]
+func (cs *CollectionSet) readerFor(name string) (*hfile.Reader, error) {
+	c, ok := cs.collections[name]
 	if !ok {
-		return nil, fmt.Errorf("not configured with reader for collection %s", c)
+		return nil, fmt.Errorf("not configured with reader for collection %s", name)
 	}
-	return reader, nil
+	return c.reader, nil
 }
 
 func (cs *CollectionSet) scannerFor(c string) (*hfile.Scanner, error) {

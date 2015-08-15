@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"encoding/hex"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -18,11 +18,13 @@ type Collection struct {
 }
 
 type CollectionSet struct {
+	settings    *Settings
 	collections map[string]Collection
 }
 
-func LoadCollections(collections []Collection) (*CollectionSet, error) {
+func LoadCollections(settings *Settings, collections []Collection) (*CollectionSet, error) {
 	cs := new(CollectionSet)
+	cs.settings = settings
 	cs.collections = make(map[string]Collection)
 
 	for _, c := range collections {
@@ -62,7 +64,9 @@ func (cs *CollectionSet) scannerFor(c string) (*hfile.Scanner, error) {
 }
 
 func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen.SingleHFileKeyResponse, err error) {
-	//log.Printf("[GetValuesSingle] %s (%d keys)\n", *req.HfileName, len(req.SortedKeys))
+	if cs.settings.debug {
+		log.Printf("[GetValuesSingle] %s (%d keys)\n", *req.HfileName, len(req.SortedKeys))
+	}
 	reader, err := cs.scannerFor(*req.HfileName)
 	if err != nil {
 		return nil, err
@@ -81,7 +85,9 @@ func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {
-		//log.Printf("[GetValuesSingle] key: %s\n", hex.EncodeToString(key))
+		if cs.settings.debug {
+			log.Printf("[GetValuesSingle] key: %s\n", hex.EncodeToString(key))
+		}
 		value, err, ok := reader.GetFirst(key)
 		if err != nil {
 			return nil, err
@@ -92,7 +98,9 @@ func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		}
 	}
 
-	//log.Printf("[GetValuesSingle] %s found %d of %d.\n", *req.HfileName, found, len(req.SortedKeys))
+	if cs.settings.debug {
+		log.Printf("[GetValuesSingle] %s found %d of %d.\n", *req.HfileName, found, len(req.SortedKeys))
+	}
 	res.KeyCount = &found
 	return res, nil
 }

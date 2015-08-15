@@ -13,11 +13,13 @@ import (
 
 type Settings struct {
 	listen int
+	debug  bool
 }
 
 func getSettings() Settings {
 	s := Settings{}
 	flag.IntVar(&s.listen, "port", 9999, "listen port")
+	flag.BoolVar(&s.debug, "debug", false, "print debug output")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr,
@@ -63,7 +65,7 @@ func main() {
 	collections := getCollectionConfig(flag.Args())
 
 	log.Println("Loading collections...")
-	cs, err := LoadCollections(collections)
+	cs, err := LoadCollections(&s, collections)
 	if err != nil {
 		log.Fatal(err)
 	}

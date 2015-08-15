@@ -50,7 +50,7 @@ func (cs *CollectionSet) scannerFor(c string) (*hfile.Scanner, error) {
 		return nil, err
 	}
 	s := hfile.NewScanner(reader)
-	return &s, nil
+	return s, nil
 }
 
 func (cs *CollectionSet) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen.SingleHFileKeyResponse, err error) {

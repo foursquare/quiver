@@ -55,9 +55,11 @@ def run(args):
   downloaded = download(collections, args.local, args.verbose)
   pairs = ["%s=%s"%(name, local) for name, local in downloaded.iteritems()]
 
-  mlock = []
+  opts = []
   if args.lock:
-    mlock = ['--mlock']
+    opts.append('--mlock')
+  if args.verbose:
+    opts.append('--debug')
 
   cmd = [args.binary] + mlock + pairs
 
@@ -74,7 +76,6 @@ def run(args):
       pass
   else:
     print "DRY RUN. To start server, re-run with --run."
-
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()

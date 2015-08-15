@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/paperstreet/gohfile/hfile"
+	"github.com/foursquare/gohfile"
 )
 
 type DebugHandler struct {

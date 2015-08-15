@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/dt/thile/gen"
-	"github.com/paperstreet/gohfile/hfile"
+	"github.com/foursquare/gohfile"
 )
 
 type Collection struct {

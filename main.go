@@ -14,6 +14,9 @@ import (
 type SettingDefs struct {
 	port  int
 	debug bool
+
+	hdfsPathPrefix string
+	hdfsCachePath  string
 }
 
 var Settings SettingDefs
@@ -22,6 +25,8 @@ func readSettings() []string {
 	s := SettingDefs{}
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 	flag.BoolVar(&s.debug, "debug", false, "print debug output")
+	flag.StringVar(&s.hdfsPathPrefix, "hdfs-prefix", "", "path-prefix indicating a file must be fetched from hdfs")
+	flag.StringVar(&s.hdfsCachePath, "hdfs-cache", "", "local path to write files fetch from hdfs (*not* cleaned up automatically)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr,

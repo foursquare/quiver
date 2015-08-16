@@ -123,7 +123,17 @@ func (cs *CollectionSet) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 }
 
 func (cs *CollectionSet) GetValuesForPrefixes(req *gen.PrefixRequest) (r *gen.PrefixResponse, err error) {
-	return nil, nil
+	res := new(gen.PrefixResponse)
+	if reader, err := cs.readerFor(*req.HfileName); err != nil {
+		return nil, err
+	} else {
+		i := reader.NewIterator()
+		if res.Values, err = i.AllForPrfixes(req.SortedKeys); err != nil {
+			return nil, err
+		} else {
+			return res, nil
+		}
+	}
 }
 
 func (cs *CollectionSet) GetValuesMultiSplitKeys(req *gen.MultiHFileSplitKeyRequest) (r *gen.KeyToValuesResponse, err error) {

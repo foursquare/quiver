@@ -78,7 +78,7 @@ func main() {
 	log.Printf("Serving on http://%s:%d/ \n", name, s.listen)
 
 	impl := gen.NewHFileServiceProcessor(cs)
-	http.Handle("/rpc/HfileService", &HttpRpcHandler{impl})
+	http.Handle("/rpc/HFileService", &HttpRpcHandler{impl})
 	http.Handle("/", &DebugHandler{cs})
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.listen), nil))

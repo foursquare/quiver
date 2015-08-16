@@ -13,13 +13,13 @@ import (
 )
 
 type Settings struct {
-	listen int
-	debug  bool
+	port  int
+	debug bool
 }
 
 func getSettings() Settings {
 	s := Settings{}
-	flag.IntVar(&s.listen, "port", 9999, "listen port")
+	flag.IntVar(&s.port, "port", 9999, "listen port")
 	flag.BoolVar(&s.debug, "debug", false, "print debug output")
 
 	flag.Usage = func() {
@@ -75,11 +75,11 @@ func main() {
 	if err != nil {
 		name = "localhost"
 	}
-	log.Printf("Serving on http://%s:%d/ \n", name, s.listen)
+	log.Printf("Serving on http://%s:%d/ \n", name, s.port)
 
 	impl := gen.NewHFileServiceProcessor(cs)
 	http.Handle("/rpc/HFileService", &HttpRpcHandler{impl})
 	http.Handle("/", &DebugHandler{cs})
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.listen), nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.port), nil))
 }

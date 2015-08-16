@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dt/thile/gen"
 	"github.com/foursquare/gohfile"
 )
 
@@ -66,7 +65,7 @@ func main() {
 	configs := getCollectionConfig(flag.Args())
 
 	log.Println("Loading collections...")
-	cs, err := LoadCollections(&s, configs)
+	cs, err := hfile.LoadCollections(configs, s.debug)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,9 +76,8 @@ func main() {
 	}
 	log.Printf("Serving on http://%s:%d/ \n", name, s.port)
 
-	impl := gen.NewHFileServiceProcessor(cs)
-	http.Handle("/rpc/HFileService", &HttpRpcHandler{impl})
-	http.Handle("/", &DebugHandler{cs})
+	http.Handle("/rpc/HFileService", NewHttpRpcHandler(&s, cs))
+	http.Handle("/", &DebugHandler{cs, &s})
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.port), nil))
 }

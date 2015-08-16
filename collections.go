@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -137,7 +138,23 @@ func (cs *CollectionSet) GetValuesForPrefixes(req *gen.PrefixRequest) (r *gen.Pr
 }
 
 func (cs *CollectionSet) GetValuesMultiSplitKeys(req *gen.MultiHFileSplitKeyRequest) (r *gen.KeyToValuesResponse, err error) {
-	return nil, nil
+	res := make(map[string][][]byte)
+	scanner, err := cs.scannerFor(*req.HfileName)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, parts := range RevProduct(req.SplitKey) {
+		// TODO(davidt): avoid allocing concated key by adding split-key search lower down.
+		key := bytes.Join(parts, nil)
+
+		if values, err := scanner.GetAll(key); err != nil {
+			return nil, err
+		} else if len(values) > 0 {
+			res[string(key)] = values
+		}
+	}
+	return &gen.KeyToValuesResponse{res}, nil
 }
 
 func (cs *CollectionSet) GetIterator(req *gen.IteratorRequest) (r *gen.IteratorResponse, err error) {

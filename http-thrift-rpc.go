@@ -12,8 +12,8 @@ type HttpRpcHandler struct {
 	*gen.HFileServiceProcessor
 }
 
-func NewHttpRpcHandler(settings *Settings, cs *hfile.CollectionSet) *HttpRpcHandler {
-	impl := gen.NewHFileServiceProcessor(&ThriftRpcImpl{cs, settings})
+func NewHttpRpcHandler(cs *hfile.CollectionSet) *HttpRpcHandler {
+	impl := gen.NewHFileServiceProcessor(&ThriftRpcImpl{cs})
 	return &HttpRpcHandler{impl}
 }
 

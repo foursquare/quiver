@@ -12,7 +12,6 @@ import (
 
 type DebugHandler struct {
 	*hfile.CollectionSet
-	settings *Settings
 }
 
 func (h *DebugHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {

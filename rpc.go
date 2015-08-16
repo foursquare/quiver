@@ -11,11 +11,10 @@ import (
 
 type ThriftRpcImpl struct {
 	*hfile.CollectionSet
-	settings *Settings
 }
 
 func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen.SingleHFileKeyResponse, err error) {
-	if cs.settings.debug {
+	if Settings.debug {
 		log.Printf("[GetValuesSingle] %s (%d keys)\n", *req.HfileName, len(req.SortedKeys))
 	}
 	reader, err := cs.ScannerFor(*req.HfileName)
@@ -24,10 +23,12 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	}
 
 	if req.PerKeyValueLimit != nil {
+		// TODO(davidt) impl
 		log.Println("[GetValuesSingle] PerKeyValueLimit. oh well.")
 	}
 
 	if req.CountOnly != nil {
+		// TODO(davidt) impl
 		log.Println("[GetValuesSingle] CountOnly. oh well.")
 	}
 
@@ -36,7 +37,7 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {
-		if cs.settings.debug {
+		if Settings.debug {
 			log.Printf("[GetValuesSingle] key: %s\n", hex.EncodeToString(key))
 		}
 		value, err, ok := reader.GetFirst(key)
@@ -49,7 +50,7 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		}
 	}
 
-	if cs.settings.debug {
+	if Settings.debug {
 		log.Printf("[GetValuesSingle] %s found %d of %d.\n", *req.HfileName, found, len(req.SortedKeys))
 	}
 	res.KeyCount = &found
@@ -57,7 +58,7 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 }
 
 func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.MultiHFileKeyResponse, err error) {
-	if cs.settings.debug {
+	if Settings.debug {
 		log.Println("[GetValuesMulti]", len(req.SortedKeys))
 	}
 

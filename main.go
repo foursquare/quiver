@@ -11,13 +11,15 @@ import (
 	"github.com/foursquare/gohfile"
 )
 
-type Settings struct {
+type SettingDefs struct {
 	port  int
 	debug bool
 }
 
-func getSettings() Settings {
-	s := Settings{}
+var Settings SettingDefs
+
+func readSettings() []string {
+	s := SettingDefs{}
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 	flag.BoolVar(&s.debug, "debug", false, "print debug output")
 
@@ -40,7 +42,10 @@ Usage: %s [options] col1@path1 col2@path2 ...
 		flag.Usage()
 		os.Exit(-1)
 	}
-	return s
+
+	Settings = s
+
+	return flag.Args()
 }
 
 func getCollectionConfig(args []string) []hfile.CollectionConfig {
@@ -61,11 +66,12 @@ func getCollectionConfig(args []string) []hfile.CollectionConfig {
 }
 
 func main() {
-	s := getSettings()
-	configs := getCollectionConfig(flag.Args())
+	args := readSettings()
+
+	configs := getCollectionConfig(args)
 
 	log.Println("Loading collections...")
-	cs, err := hfile.LoadCollections(configs, s.debug)
+	cs, err := hfile.LoadCollections(configs, Settings.debug)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,10 +80,10 @@ func main() {
 	if err != nil {
 		name = "localhost"
 	}
-	log.Printf("Serving on http://%s:%d/ \n", name, s.port)
+	log.Printf("Serving on http://%s:%d/ \n", name, Settings.port)
 
-	http.Handle("/rpc/HFileService", NewHttpRpcHandler(&s, cs))
-	http.Handle("/", &DebugHandler{cs, &s})
+	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs))
+	http.Handle("/", &DebugHandler{cs})
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.port), nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", Settings.port), nil))
 }

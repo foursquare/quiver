@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"log"
 
 	"github.com/dt/thile/gen"
@@ -121,13 +122,13 @@ func (cs *ThriftRpcImpl) GetValuesMultiSplitKeys(req *gen.MultiHFileSplitKeyRequ
 }
 
 func (cs *ThriftRpcImpl) GetIterator(req *gen.IteratorRequest) (r *gen.IteratorResponse, err error) {
-	return nil, nil
+	return nil, fmt.Errorf("Not implemented")
 }
 
 func (cs *ThriftRpcImpl) GetInfo(req *gen.InfoRequest) (r []*gen.HFileInfo, err error) {
-	return nil, nil
+	return nil, fmt.Errorf("Not implemented")
 }
 
 func (cs *ThriftRpcImpl) TestTimeout(waitInMillis int32) (r int32, err error) {
-	return 0, nil
+	return 0, fmt.Errorf("Not implemented")
 }

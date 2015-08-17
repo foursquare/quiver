@@ -14,6 +14,7 @@ import (
 type SettingDefs struct {
 	port  int
 	debug bool
+	mlock bool
 
 	configJsonUrl string
 
@@ -28,6 +29,8 @@ func readSettings() []string {
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 	flag.BoolVar(&s.debug, "debug", false, "print debug output")
 
+	flag.BoolVar(&s.mlock, "mem", false, "mlock ALL mapped files to keep them im memory (ignores = vs @ specs).")
+
 	flag.StringVar(&s.configJsonUrl, "config-json", "", "URL of collection configuration json")
 
 	flag.StringVar(&s.hdfsPathPrefix, "hdfs-prefix", "", "path-prefix indicating a file must be fetched from hdfs")
@@ -36,10 +39,10 @@ func readSettings() []string {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr,
 			`
-Usage: %s [options] col1@path1 col2@path2 ...
+Usage: %s [options] col1=path1 col2=path2 ...
 
 	By default, collections are mmaped and locked into memory.
-	Use 'col=path' to serve directly off disk.
+	Use 'col@path' to serve directly off disk.
 
 	You may need to set 'ulimit -Hl' and 'ulimit -Sl' to allow locking.
 
@@ -60,17 +63,19 @@ Usage: %s [options] col1@path1 col2@path2 ...
 }
 
 func getCollectionConfig(args []string) []hfile.CollectionConfig {
+	var configs []hfile.CollectionConfig
+	var err error
+
 	if Settings.configJsonUrl != "" {
 		if len(args) > 0 {
 			log.Fatalln("Only one of command-line collection specs or json config may be used.")
 		}
-		configs, err := LoadFromUrl(Settings.configJsonUrl)
+		configs, err = LoadFromUrl(Settings.configJsonUrl)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		return configs
 	} else {
-		collections := make([]hfile.CollectionConfig, len(args))
+		configs := make([]hfile.CollectionConfig, len(args))
 		for i, pair := range flag.Args() {
 			parts := strings.SplitN(pair, "=", 2)
 			mlock := true
@@ -81,10 +86,18 @@ func getCollectionConfig(args []string) []hfile.CollectionConfig {
 			if len(parts) != 2 {
 				log.Fatal("collections must be specified in the form 'name=path' or 'name@path'")
 			}
-			collections[i] = hfile.CollectionConfig{parts[0], parts[1], mlock}
+			configs[i] = hfile.CollectionConfig{parts[0], parts[1], mlock}
 		}
-		return collections
 	}
+	if Settings.mlock {
+		for i, _ := range configs {
+			if Settings.debug && !configs[i].Mlock {
+				log.Printf("[getCollectionConfig] Forcing %s to be in-memory", configs[i].Name)
+			}
+			configs[i].Mlock = true
+		}
+	}
+	return configs
 }
 
 func main() {

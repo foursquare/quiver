@@ -15,6 +15,8 @@ type SettingDefs struct {
 	port  int
 	debug bool
 
+	configJsonUrl string
+
 	hdfsPathPrefix string
 	hdfsCachePath  string
 }
@@ -25,8 +27,11 @@ func readSettings() []string {
 	s := SettingDefs{}
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 	flag.BoolVar(&s.debug, "debug", false, "print debug output")
+
+	flag.StringVar(&s.configJsonUrl, "config-json", "", "URL of collection configuration json")
+
 	flag.StringVar(&s.hdfsPathPrefix, "hdfs-prefix", "", "path-prefix indicating a file must be fetched from hdfs")
-	flag.StringVar(&s.hdfsCachePath, "hdfs-cache", "", "local path to write files fetch from hdfs (*not* cleaned up automatically)")
+	flag.StringVar(&s.hdfsCachePath, "hdfs-cache", "/tmp", "local path to write files fetch from hdfs (*not* cleaned up automatically)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr,
@@ -36,38 +41,50 @@ Usage: %s [options] col1@path1 col2@path2 ...
 	By default, collections are mmaped and locked into memory.
 	Use 'col=path' to serve directly off disk.
 
-	You may need to set 'ulimit -Hl' and 'ulimit -Sl' to allow locking
+	You may need to set 'ulimit -Hl' and 'ulimit -Sl' to allow locking.
 
 `, os.Args[0])
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
-	if len(flag.Args()) < 1 {
+	Settings = s
+
+	if len(flag.Args()) < 1 && Settings.configJsonUrl == "" {
+		log.Println("bah!", Settings)
 		flag.Usage()
 		os.Exit(-1)
 	}
-
-	Settings = s
 
 	return flag.Args()
 }
 
 func getCollectionConfig(args []string) []hfile.CollectionConfig {
-	collections := make([]hfile.CollectionConfig, len(args))
-	for i, pair := range flag.Args() {
-		parts := strings.SplitN(pair, "=", 2)
-		mlock := true
-		if len(parts) != 2 {
-			mlock = false
-			parts = strings.SplitN(pair, "@", 2)
+	if Settings.configJsonUrl != "" {
+		if len(args) > 0 {
+			log.Fatalln("Only one of command-line collection specs or json config may be used.")
 		}
-		if len(parts) != 2 {
-			log.Fatal("collections must be specified in the form 'name=path' or 'name@path'")
+		configs, err := LoadFromUrl(Settings.configJsonUrl)
+		if err != nil {
+			log.Fatalln(err)
 		}
-		collections[i] = hfile.CollectionConfig{parts[0], parts[1], mlock}
+		return configs
+	} else {
+		collections := make([]hfile.CollectionConfig, len(args))
+		for i, pair := range flag.Args() {
+			parts := strings.SplitN(pair, "=", 2)
+			mlock := true
+			if len(parts) != 2 {
+				mlock = false
+				parts = strings.SplitN(pair, "@", 2)
+			}
+			if len(parts) != 2 {
+				log.Fatal("collections must be specified in the form 'name=path' or 'name@path'")
+			}
+			collections[i] = hfile.CollectionConfig{parts[0], parts[1], mlock}
+		}
+		return collections
 	}
-	return collections
 }
 
 func main() {

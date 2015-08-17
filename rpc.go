@@ -121,8 +121,95 @@ func (cs *ThriftRpcImpl) GetValuesMultiSplitKeys(req *gen.MultiHFileSplitKeyRequ
 	return &gen.KeyToValuesResponse{res}, nil
 }
 
-func (cs *ThriftRpcImpl) GetIterator(req *gen.IteratorRequest) (r *gen.IteratorResponse, err error) {
-	return nil, fmt.Errorf("Not implemented")
+func (cs *ThriftRpcImpl) GetIterator(req *gen.IteratorRequest) (*gen.IteratorResponse, error) {
+	// 	HfileName     *string `thrift:"hfileName,1" json:"hfileName"`
+	// 	IncludeValues *bool   `thrift:"includeValues,2" json:"includeValues"`
+	// 	LastKey       []byte  `thrift:"lastKey,3" json:"lastKey"`
+	// 	SkipKeys      *int32  `thrift:"skipKeys,4" json:"skipKeys"`
+	// 	ResponseLimit *int32  `thrift:"responseLimit,5" json:"responseLimit"`
+	// 	EndKey        []byte  `thrift:"endKey,6" json:"endKey"`
+	var err error
+
+	if req.ResponseLimit == nil {
+		return nil, fmt.Errorf("Missing limit.")
+	}
+	limit := int(*req.ResponseLimit)
+
+	reader, err := cs.ReaderFor(*req.HfileName)
+	if err != nil {
+		return nil, err
+	}
+	it := reader.NewIterator()
+
+	remaining := false
+
+	if req.LastKey != nil {
+		remaining, err = it.Seek(req.LastKey)
+	} else {
+		remaining, err = it.Next()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	res := new(gen.IteratorResponse)
+
+	if !remaining {
+		return res, nil
+	}
+
+	skipKeys := int32(0)
+	lastKey := it.Key()
+
+	if toSkip := req.GetSkipKeys(); toSkip > 0 {
+		for i := int32(0); i < toSkip && remaining; i++ {
+			if bytes.Equal(lastKey, it.Key()) {
+				skipKeys = skipKeys + 1
+			} else {
+				skipKeys = 0
+			}
+
+			lastKey = it.Key()
+
+			remaining, err = it.Next()
+			if err != nil {
+				return nil, err
+			}
+		}
+		if !remaining {
+			return res, nil
+		}
+	}
+
+	if req.EndKey != nil {
+		remaining = remaining && !hfile.After(it.Key(), req.EndKey)
+	}
+
+	r := make([]*gen.KeyValueItem, 0)
+	for i := 0; i < limit && remaining; i++ {
+		v := []byte{}
+		if req.IncludeValues == nil || *req.IncludeValues {
+			v = it.Value()
+		}
+		r = append(r, &gen.KeyValueItem{it.Key(), v})
+
+		if bytes.Equal(lastKey, it.Key()) {
+			skipKeys = skipKeys + 1
+		} else {
+			skipKeys = 0
+		}
+		lastKey = it.Key()
+
+		remaining, err = it.Next()
+		if err != nil {
+			return nil, err
+		}
+		if req.EndKey != nil {
+			remaining = remaining && !hfile.After(it.Key(), req.EndKey)
+		}
+	}
+	return &gen.IteratorResponse{r, lastKey, &skipKeys}, nil
 }
 
 func (cs *ThriftRpcImpl) GetInfo(req *gen.InfoRequest) (r []*gen.HFileInfo, err error) {

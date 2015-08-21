@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -143,7 +144,20 @@ func FetchFromHdfs(client *hdfs.Client, name, remote string) (string, error) {
 
 	if client != nil {
 		log.Printf("[FetchFromHdfs] Fetching %s from hdfs (using namenode %s)...\n\t%s -> %s.", name, Settings.hdfsAddress, remote, local)
-		err := client.CopyToLocal(remote, local)
+		// err := client.CopyToLocal(remote, local)
+		webHdfsUrl := fmt.Sprintf("http://%s/webhdfs/v1%s?op=OPEN&user.name=produser", Settings.hdfsAddress, remote)
+		localFile, err := os.Create(local)
+		defer localFile.Close()
+		if err != nil {
+			return "", err
+		}
+
+		resp, err := http.Get(webHdfsUrl)
+    defer resp.Body.Close()
+		if err != nil {
+			return "", err
+		}
+		_, err = io.Copy(localFile, resp.Body)
 		if err != nil {
 			return "", err
 		}

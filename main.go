@@ -18,6 +18,7 @@ type SettingDefs struct {
 
 	configJsonUrl string
 
+	hdfsAddress    string
 	hdfsPathPrefix string
 	hdfsCachePath  string
 }
@@ -33,6 +34,7 @@ func readSettings() []string {
 
 	flag.StringVar(&s.configJsonUrl, "config-json", "", "URL of collection configuration json")
 
+	flag.StringVar(&s.hdfsAddress, "hdfs", "", "HDFS name node to connect to.")
 	flag.StringVar(&s.hdfsPathPrefix, "hdfs-prefix", "", "path-prefix indicating a file must be fetched from hdfs")
 	flag.StringVar(&s.hdfsCachePath, "hdfs-cache", "/tmp", "local path to write files fetch from hdfs (*not* cleaned up automatically)")
 

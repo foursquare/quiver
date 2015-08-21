@@ -12,6 +12,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/colinmarc/hdfs"
 	"github.com/foursquare/gohfile"
 )
 
@@ -80,13 +81,27 @@ func FetchCollections(unfetched []hfile.CollectionConfig) ([]hfile.CollectionCon
 		log.Printf("[FetchCollections] Checking for non-local collections...")
 	}
 
+	var client *hdfs.Client
+
 	fetched := make([]hfile.CollectionConfig, len(unfetched))
 	for i, cfg := range unfetched {
 		if download, trimmed := IsHdfs(cfg.Path); download {
 			if Settings.debug {
 				log.Printf("[FetchCollections] %s (%s) is an HDFS path (%s)", cfg.Name, cfg.Path, trimmed)
 			}
-			if local, err := FetchFromHdfs(cfg.Name, trimmed); err != nil {
+
+			if client == nil && Settings.hdfsAddress != "" {
+				if Settings.debug {
+					log.Printf("[FetchCollections] Connecting to HDFS %s", Settings.hdfsAddress)
+				}
+				if c, err := hdfs.New(Settings.hdfsAddress); err != nil {
+					return nil, err
+				} else {
+					client = c
+				}
+			}
+
+			if local, err := FetchFromHdfs(client, cfg.Name, trimmed); err != nil {
 				return nil, err
 			} else {
 				cfg.Path = local
@@ -109,14 +124,14 @@ func IsHdfs(p string) (bool, string) {
 	return false, p
 }
 
-func FetchFromHdfs(name, hdfs string) (string, error) {
-	h := md5.Sum([]byte(hdfs))
+func FetchFromHdfs(client *hdfs.Client, name, remote string) (string, error) {
+	h := md5.Sum([]byte(remote))
 	base := hex.EncodeToString(h[:]) + ".hfile"
 	local := path.Join(Settings.hdfsCachePath, base)
 
 	if _, err := os.Stat(local); err == nil {
 		if Settings.debug {
-			log.Printf("[FetchFromHdfs] %s (%s) already exists at %s.", name, hdfs, local)
+			log.Printf("[FetchFromHdfs] %s (%s) already exists at %s.", name, remote, local)
 		}
 		return local, nil
 	} else if !os.IsNotExist(err) {
@@ -126,13 +141,20 @@ func FetchFromHdfs(name, hdfs string) (string, error) {
 		return "", err
 	}
 
-	log.Printf("[FetchFromHdfs] Fetching %s from hdfs...\n\t%s -> %s.", name, hdfs, local)
-
-	cmd := exec.Command("hadoop", "fs", "-copyToLocal", hdfs, local)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("[FetchFromHdfs] Error fetching: %v:\n%s", err, output)
-		return "", err
+	if client != nil {
+		log.Printf("[FetchFromHdfs] Fetching %s from hdfs (using namenode %s)...\n\t%s -> %s.", name, Settings.hdfsAddress, remote, local)
+		err := client.CopyToLocal(remote, local)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		log.Printf("[FetchFromHdfs] Running hadoop fs -copyToLocal...")
+		cmd := exec.Command("hadoop", "fs", "-copyToLocal", remote, local)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Printf("[FetchFromHdfs] Error shelling out to copyToLocal: %v:\n%s", err, output)
+			return "", err
+		}
 	}
 	if Settings.debug {
 		log.Printf("[FetchFromHdfs] Fetched %s.", name)

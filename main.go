@@ -18,15 +18,32 @@ type SettingDefs struct {
 
 	configJsonUrl string
 
-	hdfsAddress    string
-	hdfsPathPrefix string
-	hdfsCachePath  string
+	cachePath      string
+	remotePrefixes RemotePrefix
 }
 
 var Settings SettingDefs
 
+type RemotePrefix struct {
+	prefixes map[string]string
+}
+
+func (r *RemotePrefix) String() string {
+	return "remote prefix"
+}
+
+func (r *RemotePrefix) Set(s string) error {
+	parts := strings.SplitN(s, "=", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("remote prefix must be of form /prefix/path=http://example/foo%%s")
+	}
+	r.prefixes[parts[0]] = parts[1]
+	return nil
+}
+
 func readSettings() []string {
 	s := SettingDefs{}
+	s.remotePrefixes.prefixes = make(map[string]string)
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 	flag.BoolVar(&s.debug, "debug", false, "print debug output")
 
@@ -34,9 +51,9 @@ func readSettings() []string {
 
 	flag.StringVar(&s.configJsonUrl, "config-json", "", "URL of collection configuration json")
 
-	flag.StringVar(&s.hdfsAddress, "hdfs", "", "HDFS name node to connect to.")
-	flag.StringVar(&s.hdfsPathPrefix, "hdfs-prefix", "", "path-prefix indicating a file must be fetched from hdfs")
-	flag.StringVar(&s.hdfsCachePath, "hdfs-cache", "/tmp", "local path to write files fetch from hdfs (*not* cleaned up automatically)")
+	flag.StringVar(&s.cachePath, "cache", os.TempDir(), "local path to write files fetched (*not* cleaned up automatically)")
+
+	flag.Var(&s.remotePrefixes, "remote", "/prefix/path=<url-format-string>")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr,

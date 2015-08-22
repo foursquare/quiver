@@ -9,11 +9,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 
-	"github.com/colinmarc/hdfs"
 	"github.com/foursquare/gohfile"
 )
 
@@ -82,27 +80,15 @@ func FetchCollections(unfetched []hfile.CollectionConfig) ([]hfile.CollectionCon
 		log.Printf("[FetchCollections] Checking for non-local collections...")
 	}
 
-	var client *hdfs.Client
-
 	fetched := make([]hfile.CollectionConfig, len(unfetched))
 	for i, cfg := range unfetched {
-		if download, trimmed := IsHdfs(cfg.Path); download {
+		if isRemote, remote := IsRemote(cfg.Path); isRemote {
+
 			if Settings.debug {
-				log.Printf("[FetchCollections] %s (%s) is an HDFS path (%s)", cfg.Name, cfg.Path, trimmed)
+				log.Printf("[FetchCollections] %s (%s) is remote path on (%s)", cfg.Name, cfg.Path, remote)
 			}
 
-			if client == nil && Settings.hdfsAddress != "" {
-				if Settings.debug {
-					log.Printf("[FetchCollections] Connecting to HDFS %s", Settings.hdfsAddress)
-				}
-				if c, err := hdfs.New(Settings.hdfsAddress); err != nil {
-					return nil, err
-				} else {
-					client = c
-				}
-			}
-
-			if local, err := FetchFromHdfs(client, cfg.Name, trimmed); err != nil {
+			if local, err := FetchRemote(cfg.Name, remote); err != nil {
 				return nil, err
 			} else {
 				cfg.Path = local
@@ -115,63 +101,61 @@ func FetchCollections(unfetched []hfile.CollectionConfig) ([]hfile.CollectionCon
 	return fetched, nil
 }
 
-func IsHdfs(p string) (bool, string) {
-	if len(Settings.hdfsPathPrefix) > 1 && strings.HasPrefix(p, Settings.hdfsPathPrefix) {
-		if Settings.debug {
-			log.Printf("[IsHdfs] Trimming %s off of %s", Settings.hdfsPathPrefix, p)
+func IsRemote(p string) (bool, string) {
+	for prefix, format := range Settings.remotePrefixes.prefixes {
+		if strings.HasPrefix(p, prefix) {
+			trimmed := strings.TrimPrefix(p, prefix)
+			full := fmt.Sprintf(format, trimmed)
+			if Settings.debug {
+				log.Printf("[IsRmote] path %s is remote: %s", trimmed, full)
+			}
+			return true, full
 		}
-		return true, strings.TrimPrefix(p, Settings.hdfsPathPrefix)
 	}
 	return false, p
 }
 
-func FetchFromHdfs(client *hdfs.Client, name, remote string) (string, error) {
+func FetchRemote(name, remote string) (string, error) {
 	h := md5.Sum([]byte(remote))
+
 	base := hex.EncodeToString(h[:]) + ".hfile"
-	local := path.Join(Settings.hdfsCachePath, base)
+
+	local := path.Join(Settings.cachePath, base)
 
 	if _, err := os.Stat(local); err == nil {
 		if Settings.debug {
-			log.Printf("[FetchFromHdfs] %s (%s) already exists at %s.", name, remote, local)
+			log.Printf("[FetchRemote] %s (%s) already exists at %s.", name, remote, local)
 		}
 		return local, nil
 	} else if !os.IsNotExist(err) {
 		if Settings.debug {
-			log.Printf("[FetchFromHdfs] %s Error checking local file %s: %v.", name, local, err)
+			log.Printf("[FetchRemote] %s Error checking local file %s: %v.", name, local, err)
 		}
 		return "", err
 	}
 
-	if client != nil {
-		log.Printf("[FetchFromHdfs] Fetching %s from hdfs (using namenode %s)...\n\t%s -> %s.", name, Settings.hdfsAddress, remote, local)
-		// err := client.CopyToLocal(remote, local)
-		webHdfsUrl := fmt.Sprintf("http://%s/webhdfs/v1%s?op=OPEN&user.name=produser", Settings.hdfsAddress, remote)
-		localFile, err := os.Create(local)
-		defer localFile.Close()
-		if err != nil {
-			return "", err
-		}
+	log.Printf("[FetchRemote] Fetching %s: %s -> %s.", name, remote, local)
+	fp, err := os.Create(local)
 
-		resp, err := http.Get(webHdfsUrl)
-    defer resp.Body.Close()
-		if err != nil {
-			return "", err
-		}
-		_, err = io.Copy(localFile, resp.Body)
-		if err != nil {
-			return "", err
-		}
-	} else {
-		log.Printf("[FetchFromHdfs] Running hadoop fs -copyToLocal...")
-		cmd := exec.Command("hadoop", "fs", "-copyToLocal", remote, local)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			log.Printf("[FetchFromHdfs] Error shelling out to copyToLocal: %v:\n%s", err, output)
-			return "", err
-		}
+	if err != nil {
+		return "", err
 	}
+	defer fp.Close()
+
+	resp, err := http.Get(remote)
+
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	_, err = io.Copy(fp, resp.Body)
+	if err != nil {
+		return "", err
+	}
+
 	if Settings.debug {
-		log.Printf("[FetchFromHdfs] Fetched %s.", name)
+		log.Printf("[FetchRemote] Fetched %s.", name)
 	}
 	return local, nil
 }

@@ -20,6 +20,9 @@ type SettingDefs struct {
 
 	cachePath      string
 	remotePrefixes RemotePrefix
+
+	graphite       string
+	graphitePrefix string
 }
 
 var Settings SettingDefs
@@ -52,6 +55,9 @@ func readSettings() []string {
 	flag.StringVar(&s.configJsonUrl, "config-json", "", "URL of collection configuration json")
 
 	flag.StringVar(&s.cachePath, "cache", os.TempDir(), "local path to write files fetched (*not* cleaned up automatically)")
+
+	flag.StringVar(&s.graphite, "graphite", "", "graphite server to report to")
+	flag.StringVar(&s.graphitePrefix, "graphite-prefix", "", "prefix to prepend to reported metrics")
 
 	flag.Var(&s.remotePrefixes, "remote", "/prefix/path=<url-format-string>")
 
@@ -121,6 +127,8 @@ func getCollectionConfig(args []string) []hfile.CollectionConfig {
 
 func main() {
 	args := readSettings()
+
+	SetupStats(false, Settings.graphite, Settings.graphitePrefix)
 
 	configs := getCollectionConfig(args)
 

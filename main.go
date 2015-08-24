@@ -100,8 +100,8 @@ func getCollectionConfig(args []string) []hfile.CollectionConfig {
 			log.Fatalln(err)
 		}
 	} else {
-		configs := make([]hfile.CollectionConfig, len(args))
-		for i, pair := range flag.Args() {
+		configs = make([]hfile.CollectionConfig, len(args))
+		for i, pair := range args {
 			parts := strings.SplitN(pair, "=", 2)
 			mlock := true
 			if len(parts) != 2 {
@@ -132,7 +132,7 @@ func main() {
 
 	configs := getCollectionConfig(args)
 
-	log.Println("Loading collections...")
+	log.Printf("Loading collections (debug %v)...\n", Settings.debug)
 	cs, err := hfile.LoadCollections(configs, Settings.debug)
 	if err != nil {
 		log.Fatal(err)

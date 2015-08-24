@@ -47,7 +47,7 @@ func (h *DebugHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 					}
 				}
 			} else {
-				reader.PrintDebugInfo(out)
+				reader.PrintDebugInfo(out, 10)
 			}
 		}
 	}

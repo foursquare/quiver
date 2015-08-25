@@ -8,6 +8,9 @@ import (
 	"os"
 	"strings"
 
+	_ "expvar"
+	_ "net/http/pprof"
+
 	"github.com/foursquare/gohfile"
 )
 

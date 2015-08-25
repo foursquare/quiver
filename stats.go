@@ -36,5 +36,11 @@ func SetupStats(sendToConsole bool, sendToGraphite, graphitePrefix string) {
 		go metrics.Log(r, time.Minute, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 	}
 
+	metrics.RegisterDebugGCStats(r)
+	go metrics.CaptureRuntimeMemStats(r, 15*time.Second)
+
+	metrics.RegisterRuntimeMemStats(r)
+	go metrics.CaptureDebugGCStats(r, 15*time.Second)
+
 	Stats = r
 }

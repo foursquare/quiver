@@ -48,7 +48,14 @@ func (p *HttpRpcHandler) Process(iprot, oprot thrift.TProtocol) (success bool, e
 
 func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 	if req.Method == "POST" {
-		in := thrift.NewTMemoryBufferLen(int(req.ContentLength))
+		var in *thrift.TMemoryBuffer
+		size := int(req.ContentLength)
+		if size > 0 {
+			in = thrift.NewTMemoryBufferLen(size)
+		} else {
+			in = thrift.NewTMemoryBuffer()
+		}
+
 		in.ReadFrom(req.Body)
 		defer req.Body.Close()
 

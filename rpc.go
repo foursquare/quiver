@@ -22,6 +22,7 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	if err != nil {
 		return nil, err
 	}
+	defer reader.Release()
 
 	if req.PerKeyValueLimit != nil {
 		// TODO(davidt) impl
@@ -67,6 +68,7 @@ func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 	if err != nil {
 		return nil, err
 	}
+	defer reader.Release()
 
 	res := new(gen.MultiHFileKeyResponse)
 	found := int32(0)
@@ -89,10 +91,10 @@ func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 
 func (cs *ThriftRpcImpl) GetValuesForPrefixes(req *gen.PrefixRequest) (r *gen.PrefixResponse, err error) {
 	res := new(gen.PrefixResponse)
-	if reader, err := cs.ReaderFor(*req.HfileName); err != nil {
+	if i, err := cs.IteratorFor(*req.HfileName); err != nil {
 		return nil, err
 	} else {
-		i := reader.NewIterator()
+		defer i.Release()
 		if res.Values, err = i.AllForPrfixes(req.SortedKeys); err != nil {
 			return nil, err
 		} else {
@@ -135,11 +137,11 @@ func (cs *ThriftRpcImpl) GetIterator(req *gen.IteratorRequest) (*gen.IteratorRes
 	}
 	limit := int(*req.ResponseLimit)
 
-	reader, err := cs.ReaderFor(*req.HfileName)
+	it, err := cs.IteratorFor(*req.HfileName)
 	if err != nil {
 		return nil, err
 	}
-	it := reader.NewIterator()
+	defer it.Release()
 
 	remaining := false
 

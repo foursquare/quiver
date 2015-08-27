@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"log"
 	"os"
 	"testing"
 
 	"github.com/dt/thile/gen"
+	"github.com/foursquare/gohfile"
 )
 
 var uncompressed gen.HFileService
@@ -37,6 +40,15 @@ func TestCompressed(t *testing.T) {
 			if len(r.GetValues()) != len(req.GetSortedKeys()) {
 				t.Fatal("wrong number of results: ", "\n", req.GetSortedKeys(), "\n", r.GetValues())
 			}
+			for i, k := range req.SortedKeys {
+				key := binary.BigEndian.Uint32(k)
+				expected := hfile.MockValueInt(int(key))
+				actual := r.GetValues()[int32(i)]
+				if !bytes.Equal(actual, expected) {
+					t.Fatalf("mismatched value for key %d (%d): found '%v' expected '%v'", i, key, actual, expected)
+				}
+			}
+
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -147,6 +148,12 @@ func FetchRemote(name, remote string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if resp.StatusCode >= 400 {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Body)
+		return "", fmt.Errorf("HTTP error fetching (%s): %s\n", resp.Status, buf.String())
+	}
+
 	defer resp.Body.Close()
 
 	_, err = io.Copy(fp, resp.Body)

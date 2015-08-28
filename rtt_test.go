@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestCompressed(t *testing.T) {
+func TestGetValuesSingle(t *testing.T) {
 	reqs := GetRandomTestReqs("compressed", 10, 5, maxKey)
 
 	for _, req := range reqs {

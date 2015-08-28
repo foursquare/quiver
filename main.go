@@ -98,7 +98,7 @@ func getCollectionConfig(args []string) []hfile.CollectionConfig {
 		if len(args) > 0 {
 			log.Fatalln("Only one of command-line collection specs or json config may be used.")
 		}
-		configs, err = LoadFromUrl(Settings.configJsonUrl)
+		configs, err = ConfigsFromJsonUrl(Settings.configJsonUrl)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -106,25 +106,13 @@ func getCollectionConfig(args []string) []hfile.CollectionConfig {
 		configs = make([]hfile.CollectionConfig, len(args))
 		for i, pair := range args {
 			parts := strings.SplitN(pair, "=", 2)
-			mlock := true
-			if len(parts) != 2 {
-				mlock = false
-				parts = strings.SplitN(pair, "@", 2)
-			}
 			if len(parts) != 2 {
 				log.Fatal("collections must be specified in the form 'name=path' or 'name@path'")
 			}
-			configs[i] = hfile.CollectionConfig{parts[0], parts[1], mlock}
+			configs[i] = hfile.CollectionConfig{parts[0], parts[1], parts[1], Settings.mlock, Settings.debug}
 		}
 	}
-	if Settings.mlock {
-		for i, _ := range configs {
-			if Settings.debug && !configs[i].Mlock {
-				log.Printf("[getCollectionConfig] Forcing %s to be in-memory", configs[i].Name)
-			}
-			configs[i].Mlock = true
-		}
-	}
+
 	return configs
 }
 
@@ -136,7 +124,7 @@ func main() {
 	configs := getCollectionConfig(args)
 
 	log.Printf("Loading collections (debug %v)...\n", Settings.debug)
-	cs, err := hfile.LoadCollections(configs, Settings.debug)
+	cs, err := hfile.LoadCollections(configs, Settings.cachePath)
 	if err != nil {
 		log.Fatal(err)
 	}

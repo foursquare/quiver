@@ -20,7 +20,7 @@ func GetTestIntFile(name string, count int, compress, lock bool) (gen.HFileServi
 	} else if err != nil {
 		return nil, err
 	}
-	cs, err := hfile.LoadCollections([]hfile.CollectionConfig{{name, path, lock}}, testing.Verbose())
+	cs, err := hfile.LoadCollections([]hfile.CollectionConfig{{name, path, path, lock, testing.Verbose()}}, os.TempDir())
 	return &ThriftRpcImpl{cs}, err
 }
 

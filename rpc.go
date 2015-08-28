@@ -18,10 +18,11 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	if Settings.debug {
 		log.Printf("[GetValuesSingle] %s (%d keys)\n", *req.HfileName, len(req.SortedKeys))
 	}
-	reader, err := cs.ScannerFor(*req.HfileName)
+	hfile, err := cs.ReaderFor(*req.HfileName)
 	if err != nil {
 		return nil, err
 	}
+	reader := hfile.GetScanner()
 	defer reader.Release()
 
 	if req.PerKeyValueLimit != nil {
@@ -64,10 +65,11 @@ func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 		log.Println("[GetValuesMulti]", len(req.SortedKeys))
 	}
 
-	reader, err := cs.ScannerFor(*req.HfileName)
+	hfile, err := cs.ReaderFor(*req.HfileName)
 	if err != nil {
 		return nil, err
 	}
+	reader := hfile.GetScanner()
 	defer reader.Release()
 
 	res := new(gen.MultiHFileKeyResponse)
@@ -91,9 +93,10 @@ func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 
 func (cs *ThriftRpcImpl) GetValuesForPrefixes(req *gen.PrefixRequest) (r *gen.PrefixResponse, err error) {
 	res := new(gen.PrefixResponse)
-	if i, err := cs.IteratorFor(*req.HfileName); err != nil {
+	if reader, err := cs.ReaderFor(*req.HfileName); err != nil {
 		return nil, err
 	} else {
+		i := reader.GetIterator()
 		defer i.Release()
 		if res.Values, err = i.AllForPrfixes(req.SortedKeys); err != nil {
 			return nil, err
@@ -105,10 +108,12 @@ func (cs *ThriftRpcImpl) GetValuesForPrefixes(req *gen.PrefixRequest) (r *gen.Pr
 
 func (cs *ThriftRpcImpl) GetValuesMultiSplitKeys(req *gen.MultiHFileSplitKeyRequest) (r *gen.KeyToValuesResponse, err error) {
 	res := make(map[string][][]byte)
-	scanner, err := cs.ScannerFor(*req.HfileName)
+	reader, err := cs.ReaderFor(*req.HfileName)
 	if err != nil {
 		return nil, err
 	}
+	scanner := reader.GetScanner()
+	defer scanner.Release()
 
 	for _, parts := range RevProduct(req.SplitKey) {
 		// TODO(davidt): avoid allocing concated key by adding split-key search lower down.
@@ -137,10 +142,11 @@ func (cs *ThriftRpcImpl) GetIterator(req *gen.IteratorRequest) (*gen.IteratorRes
 	}
 	limit := int(*req.ResponseLimit)
 
-	it, err := cs.IteratorFor(*req.HfileName)
+	reader, err := cs.ReaderFor(*req.HfileName)
 	if err != nil {
 		return nil, err
 	}
+	it := reader.GetIterator()
 	defer it.Release()
 
 	remaining := false

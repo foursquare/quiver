@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/dt/thile/gen"
 	"github.com/foursquare/gohfile"
@@ -220,8 +221,41 @@ func (cs *ThriftRpcImpl) GetIterator(req *gen.IteratorRequest) (*gen.IteratorRes
 	return &gen.IteratorResponse{r, lastKey, &skipKeys}, nil
 }
 
+func GetCollectionInfo(r *hfile.Reader, keySampleSize int) (*gen.HFileInfo, error) {
+	i := new(gen.HFileInfo)
+	i.Name = &r.Name
+	i.Path = &r.SourcePath
+	c := int64(r.EntryCount)
+	i.NumElements = &c
+	i.FirstKey, _ = r.FirstKey()
+	return i, nil
+}
+
 func (cs *ThriftRpcImpl) GetInfo(req *gen.InfoRequest) (r []*gen.HFileInfo, err error) {
-	return nil, fmt.Errorf("Not implemented")
+	require := ""
+	if req.IsSetHfileName() {
+		require := req.GetHfileName()
+		if require != "" && !strings.ContainsRune(require, '/') {
+			require = require + "/"
+		}
+	}
+
+	sample := 0
+	if req.IsSetNumRandomKeys() {
+		sample = int(*req.NumRandomKeys)
+	}
+
+	for name, reader := range cs.Collections {
+		if require == "" || strings.HasPrefix(name, require) {
+			if i, err := GetCollectionInfo(reader, sample); err != nil {
+				return nil, err
+			} else {
+				r = append(r, i)
+			}
+		}
+	}
+
+	return r, nil
 }
 
 func (cs *ThriftRpcImpl) TestTimeout(waitInMillis int32) (r int32, err error) {

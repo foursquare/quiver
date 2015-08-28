@@ -23,7 +23,7 @@ type SingleCollectionSpec struct {
 	Path          string
 }
 
-func ConfigsFromJsonUrl(url string) ([]hfile.CollectionConfig, error) {
+func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, error) {
 	if Settings.debug {
 		log.Printf("[ConfigsFromJsonUrl] Fetching config from %s...\n", url)
 	}
@@ -46,10 +46,10 @@ func ConfigsFromJsonUrl(url string) ([]hfile.CollectionConfig, error) {
 		log.Printf("[ConfigsFromJsonUrl] Found %d collections.\n", len(specs.Collections))
 	}
 
-	ret := make([]hfile.CollectionConfig, len(specs.Collections))
+	ret := make([]*hfile.CollectionConfig, len(specs.Collections))
 	for i, spec := range specs.Collections {
 		name := fmt.Sprintf("%s/%d", spec.Collection, spec.Partition)
-		ret[i] = hfile.CollectionConfig{name, TransformRemotePath(spec.Path), "", Settings.mlock, Settings.debug}
+		ret[i] = &hfile.CollectionConfig{name, TransformRemotePath(spec.Path), "", Settings.mlock, Settings.debug}
 	}
 
 	log.Printf("Found %d collections in config:", len(ret))

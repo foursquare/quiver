@@ -90,8 +90,8 @@ Usage: %s [options] col1=path1 col2=path2 ...
 	return flag.Args()
 }
 
-func getCollectionConfig(args []string) []hfile.CollectionConfig {
-	var configs []hfile.CollectionConfig
+func getCollectionConfig(args []string) []*hfile.CollectionConfig {
+	var configs []*hfile.CollectionConfig
 	var err error
 
 	if Settings.configJsonUrl != "" {
@@ -103,13 +103,13 @@ func getCollectionConfig(args []string) []hfile.CollectionConfig {
 			log.Fatalln(err)
 		}
 	} else {
-		configs = make([]hfile.CollectionConfig, len(args))
+		configs = make([]*hfile.CollectionConfig, len(args))
 		for i, pair := range args {
 			parts := strings.SplitN(pair, "=", 2)
 			if len(parts) != 2 {
 				log.Fatal("collections must be specified in the form 'name=path' or 'name@path'")
 			}
-			configs[i] = hfile.CollectionConfig{parts[0], parts[1], parts[1], Settings.mlock, Settings.debug}
+			configs[i] = &hfile.CollectionConfig{parts[0], parts[1], parts[1], Settings.mlock, Settings.debug}
 		}
 	}
 

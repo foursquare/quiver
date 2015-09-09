@@ -11,6 +11,7 @@ import (
 	_ "expvar"
 	_ "net/http/pprof"
 
+	"github.com/dt/go-metrics-reporting"
 	"github.com/foursquare/gohfile"
 )
 
@@ -93,7 +94,10 @@ func getCollectionConfig(args []string) []*hfile.CollectionConfig {
 func main() {
 	args := readSettings()
 
-	SetupStats(false, Settings.graphite, Settings.graphitePrefix)
+	report.NewRecorder().
+		EnableGCInfoCollection().
+		ReportTo(Settings.graphite, Settings.graphitePrefix).
+		SetAsDefault()
 
 	configs := getCollectionConfig(args)
 

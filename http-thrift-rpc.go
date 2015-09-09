@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/dt/go-metrics-reporting"
 	"github.com/dt/thile/gen"
 	"github.com/foursquare/gohfile"
-	"github.com/rcrowley/go-metrics"
 )
 
 type HttpRpcHandler struct {
@@ -29,8 +29,7 @@ func (p *HttpRpcHandler) Process(iprot, oprot thrift.TProtocol) (success bool, e
 	if processor, ok := p.GetProcessorFunction(name); ok {
 		start := time.Now()
 		success, err = processor.Process(seqId, iprot, oprot)
-		end := time.Now()
-		metrics.GetOrRegisterTimer(name, Stats).Update(end.Sub(start))
+		report.TimeSince(name, start)
 		return
 	}
 

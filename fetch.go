@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/foursquare/gohfile"
 )
@@ -21,6 +20,7 @@ type SingleCollectionSpec struct {
 	LockNamespace string
 	Partition     int
 	Path          string
+	Url           string
 }
 
 func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, error) {
@@ -48,8 +48,10 @@ func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, error) {
 
 	ret := make([]*hfile.CollectionConfig, len(specs.Collections))
 	for i, spec := range specs.Collections {
-		name := fmt.Sprintf("%s/%d", spec.Collection, spec.Partition)
-		ret[i] = &hfile.CollectionConfig{name, TransformRemotePath(spec.Path), "", Settings.mlock, Settings.debug}
+		if spec.Url != "" {
+			name := fmt.Sprintf("%s/%d", spec.Collection, spec.Partition)
+			ret[i] = &hfile.CollectionConfig{name, spec.Url, "", Settings.mlock, Settings.debug}
+		}
 	}
 
 	log.Printf("Found %d collections in config:", len(ret))
@@ -62,18 +64,4 @@ func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, error) {
 	}
 
 	return ret, nil
-}
-
-func TransformRemotePath(p string) string {
-	for prefix, format := range Settings.remotePrefixes.prefixes {
-		if strings.HasPrefix(p, prefix) {
-			trimmed := strings.TrimPrefix(p, prefix)
-			full := fmt.Sprintf(format, trimmed)
-			if Settings.debug {
-				log.Printf("[IsRmote] path %s is remote: %s", trimmed, full)
-			}
-			return full
-		}
-	}
-	return p
 }

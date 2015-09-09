@@ -21,8 +21,7 @@ type SettingDefs struct {
 
 	configJsonUrl string
 
-	cachePath      string
-	remotePrefixes RemotePrefix
+	cachePath string
 
 	graphite       string
 	graphitePrefix string
@@ -30,26 +29,8 @@ type SettingDefs struct {
 
 var Settings SettingDefs
 
-type RemotePrefix struct {
-	prefixes map[string]string
-}
-
-func (r *RemotePrefix) String() string {
-	return "remote prefix"
-}
-
-func (r *RemotePrefix) Set(s string) error {
-	parts := strings.SplitN(s, "=", 2)
-	if len(parts) != 2 {
-		return fmt.Errorf("remote prefix must be of form /prefix/path=http://example/foo%%s")
-	}
-	r.prefixes[parts[0]] = parts[1]
-	return nil
-}
-
 func readSettings() []string {
 	s := SettingDefs{}
-	s.remotePrefixes.prefixes = make(map[string]string)
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 	flag.BoolVar(&s.debug, "debug", false, "print debug output")
 
@@ -61,8 +42,6 @@ func readSettings() []string {
 
 	flag.StringVar(&s.graphite, "graphite", "", "graphite server to report to")
 	flag.StringVar(&s.graphitePrefix, "graphite-prefix", "", "prefix to prepend to reported metrics")
-
-	flag.Var(&s.remotePrefixes, "remote", "/prefix/path=<url-format-string>")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr,

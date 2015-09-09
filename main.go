@@ -32,9 +32,10 @@ var Settings SettingDefs
 func readSettings() []string {
 	s := SettingDefs{}
 	flag.IntVar(&s.port, "port", 9999, "listen port")
+
 	flag.BoolVar(&s.debug, "debug", false, "print debug output")
 
-	flag.BoolVar(&s.mlock, "mem", false, "mlock ALL mapped files to keep them im memory (ignores = vs @ specs).")
+	flag.BoolVar(&s.mlock, "mlock", true, "mlock mapped files in memory (only applies to cmd-line specified files).")
 
 	flag.StringVar(&s.configJsonUrl, "config-json", "", "URL of collection configuration json")
 
@@ -47,12 +48,6 @@ func readSettings() []string {
 		fmt.Fprintf(os.Stderr,
 			`
 Usage: %s [options] col1=path1 col2=path2 ...
-
-	By default, collections are mmaped and locked into memory.
-	Use 'col@path' to serve directly off disk.
-
-	You may need to set 'ulimit -Hl' and 'ulimit -Sl' to allow locking.
-
 `, os.Args[0])
 		flag.PrintDefaults()
 	}
@@ -60,8 +55,8 @@ Usage: %s [options] col1=path1 col2=path2 ...
 	flag.Parse()
 	Settings = s
 
-	if len(flag.Args()) < 1 && Settings.configJsonUrl == "" {
-		log.Println("bah!", Settings)
+	if (len(flag.Args()) > 1) == (Settings.configJsonUrl != "") {
+		log.Println("Collections must be specified OR URL to configuration json.")
 		flag.Usage()
 		os.Exit(-1)
 	}
@@ -86,7 +81,7 @@ func getCollectionConfig(args []string) []*hfile.CollectionConfig {
 		for i, pair := range args {
 			parts := strings.SplitN(pair, "=", 2)
 			if len(parts) != 2 {
-				log.Fatal("collections must be specified in the form 'name=path' or 'name@path'")
+				log.Fatal("collections must be specified in the form 'name=path'")
 			}
 			configs[i] = &hfile.CollectionConfig{parts[0], parts[1], parts[1], Settings.mlock, Settings.debug}
 		}

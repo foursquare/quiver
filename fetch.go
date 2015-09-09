@@ -21,6 +21,7 @@ type SingleCollectionSpec struct {
 	Partition     int
 	Path          string
 	Url           string
+	Ondemand      bool
 }
 
 func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, error) {
@@ -50,7 +51,11 @@ func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, error) {
 	for i, spec := range specs.Collections {
 		if spec.Url != "" {
 			name := fmt.Sprintf("%s/%d", spec.Collection, spec.Partition)
-			ret[i] = &hfile.CollectionConfig{name, spec.Url, "", Settings.mlock, Settings.debug}
+			mlock := true
+			if spec.Ondemand {
+				mlock = false
+			}
+			ret[i] = &hfile.CollectionConfig{name, spec.Url, "", mlock, Settings.debug}
 		}
 	}
 

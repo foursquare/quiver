@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/dt/go-metrics-reporting"
 	"github.com/dt/thile/gen"
 	"github.com/foursquare/gohfile"

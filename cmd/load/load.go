@@ -8,6 +8,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dt/go-metrics-reporting"
@@ -27,6 +28,8 @@ type Load struct {
 	rtt       report.Timer
 	dropped   report.Meter
 	queueSize report.Guage
+
+	sync.RWMutex
 }
 
 func (l *Load) setKeys() error {
@@ -39,8 +42,17 @@ func (l *Load) setKeys() error {
 		if len(resp) < 1 || len(resp[0].RandomKeys) < 1 {
 			return fmt.Errorf("Response (len %d) contained no keys!", len(resp))
 		}
+		l.Lock()
 		l.keys = resp[0].RandomKeys
+		l.Unlock()
 		return nil
+	}
+}
+
+func (l *Load) startKeyFetcher(freq time.Duration) {
+	for _ = range time.Tick(freq) {
+		log.Println("Fetching new keys...")
+		l.setKeys()
 	}
 }
 
@@ -74,7 +86,7 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient) {
 
 func (l *Load) randomKeys(count int) [][]byte {
 	indexes := make([]int, count)
-
+	l.RLock()
 	for i := 0; i < count; i++ {
 		indexes[i] = rand.Intn(len(l.keys))
 	}
@@ -84,6 +96,7 @@ func (l *Load) randomKeys(count int) [][]byte {
 	for i := 0; i < count; i++ {
 		out[i] = l.keys[indexes[i]]
 	}
+	l.RUnlock()
 	return out
 }
 
@@ -141,6 +154,7 @@ func main() {
 	fmt.Printf("Sending %dqps to %s, drawing from %d random keys...\n", *qps, *server, len(l.keys))
 
 	l.startWorkers(*workers)
+	go l.startKeyFetcher(time.Minute)
 	l.generator(*qps)
 
 }

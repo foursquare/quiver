@@ -96,7 +96,7 @@ func main() {
 
 	report.NewRecorder().
 		EnableGCInfoCollection().
-		ReportTo(Settings.graphite, Settings.graphitePrefix).
+		ReportToServer(Settings.graphite, Settings.graphitePrefix).
 		SetAsDefault()
 
 	configs := getCollectionConfig(args)

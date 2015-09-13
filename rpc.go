@@ -24,6 +24,8 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		return nil, err
 	}
 	reader := hfile.GetScanner()
+	// TODO: clients should request strict during dev/testing?
+	reader.EnforceKeyOrder = false
 	defer reader.Release()
 
 	if req.PerKeyValueLimit != nil {

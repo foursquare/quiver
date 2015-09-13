@@ -16,6 +16,7 @@ import (
 	"github.com/dt/go-metrics-reporting"
 	"github.com/dt/thile/client"
 	"github.com/dt/thile/gen"
+	"github.com/dt/thile/util"
 )
 
 type Load struct {
@@ -47,6 +48,7 @@ func (l *Load) setKeys() error {
 		if len(resp) < 1 || len(resp[0].RandomKeys) < 1 {
 			return fmt.Errorf("Response (len %d) contained no keys!", len(resp))
 		}
+		sort.Sort(util.Keys(resp[0].RandomKeys))
 		l.Lock()
 		l.keys = resp[0].RandomKeys
 		l.Unlock()

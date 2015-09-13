@@ -26,62 +26,28 @@ type Load struct {
 	keys       [][]byte
 
 	server string
-	diff   *string
+	diff   *string // optional
 
 	work chan bool
 
-	rtt       report.Timer
-	diffRtt   report.Timer
-	diffs     report.Meter
-	dropped   report.Meter
-	queueSize report.Guage
+	rtt     report.Timer
+	diffRtt report.Timer
+	diffs   report.Meter // mis-matched responses.
 
+	queueSize report.Guage
+	dropped   report.Meter
+
+	// for atomic keyset swaps in setKeys.
 	sync.RWMutex
 }
 
-func (l *Load) setKeys() error {
-	c := thttp.NewThriftHttpRpcClient(l.server)
-	r := &gen.InfoRequest{&l.collection, l.sample}
-
-	if resp, err := c.GetInfo(r); err != nil {
-		return err
-	} else {
-		if len(resp) < 1 || len(resp[0].RandomKeys) < 1 {
-			return fmt.Errorf("Response (len %d) contained no keys!", len(resp))
-		}
-		sort.Sort(util.Keys(resp[0].RandomKeys))
-		l.Lock()
-		l.keys = resp[0].RandomKeys
-		l.Unlock()
-		return nil
-	}
-}
-
-func (l *Load) startKeyFetcher(freq time.Duration) {
-	for _ = range time.Tick(freq) {
-		log.Println("Fetching new keys...")
-		l.setKeys()
-	}
-}
-
-func (l *Load) generator(qps int) {
-	pause := time.Duration(time.Second.Nanoseconds() / int64(qps))
-
-	for _ = range time.Tick(pause) {
-		l.queueSize.Update(int64(len(l.work)))
-		select {
-		case l.work <- true:
-		default:
-			l.dropped.Mark(1)
-		}
-	}
-}
-
+// Pick a random request type to generate and send.
 func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
 	// TODO: randomly change up request type generated
 	l.sendSingle(client, diff)
 }
 
+// Generate and send a random GetValuesSingle request.
 func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
 	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
 	keys := l.randomKeys(numKeys)
@@ -129,6 +95,48 @@ func (l *Load) randomKeys(count int) [][]byte {
 	return out
 }
 
+// Fetches l.sample random keys for l.collection, sorts them and overwrites (with locking) l.keys.
+func (l *Load) setKeys() error {
+	c := thttp.NewThriftHttpRpcClient(l.server)
+	r := &gen.InfoRequest{&l.collection, l.sample}
+
+	if resp, err := c.GetInfo(r); err != nil {
+		return err
+	} else {
+		if len(resp) < 1 || len(resp[0].RandomKeys) < 1 {
+			return fmt.Errorf("Response (len %d) contained no keys!", len(resp))
+		}
+		sort.Sort(util.Keys(resp[0].RandomKeys))
+		l.Lock()
+		l.keys = resp[0].RandomKeys
+		l.Unlock()
+		return nil
+	}
+}
+
+// Re-fetches a new batch of keys every freq, swapping out the in-use set.
+func (l *Load) startKeyFetcher(freq time.Duration) {
+	for _ = range time.Tick(freq) {
+		log.Println("Fetching new keys...")
+		l.setKeys()
+	}
+}
+
+// Feeds the work channel at requested qps.
+func (l *Load) generator(qps int) {
+	pause := time.Duration(time.Second.Nanoseconds() / int64(qps))
+
+	for _ = range time.Tick(pause) {
+		l.queueSize.Update(int64(len(l.work)))
+		select {
+		case l.work <- true:
+		default:
+			l.dropped.Mark(1)
+		}
+	}
+}
+
+// starts count worker processes, each with their own thttp client(s), watching the work chan.
 func (l *Load) startWorkers(count int) {
 	for i := 0; i < count; i++ {
 		go func() {
@@ -145,6 +153,7 @@ func (l *Load) startWorkers(count int) {
 	}
 }
 
+// given a string like testing=fsan44:20202, return (http://fsan44:20202/rpc/HFileService, testing).
 func hfileUrlAndName(s string) (string, string) {
 	name := strings.NewReplacer("http://", "", ".", "_", ":", "_", "/", "_").Replace(s)
 

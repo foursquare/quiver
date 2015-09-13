@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
@@ -83,7 +84,8 @@ func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceCli
 
 func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
 	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
-	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: l.randomKeys(numKeys)}
+	keys := l.randomKeys(numKeys)
+	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: keys}
 
 	before := time.Now()
 	resp, err := client.GetValuesSingle(r)
@@ -102,7 +104,11 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 
 		if !reflect.DeepEqual(resp, diffResp) {
 			l.diffs.Mark(1)
-			log.Printf("[DIFF] req: %v\n\torig (%d): %v\n\tdiff (%d): %v\n", r, resp.GetKeyCount(), resp, diffResp.GetKeyCount(), diffResp)
+			hexKeys := make([]string, len(keys))
+			for i, key := range keys {
+				hexKeys[i] = hex.EncodeToString(key)
+			}
+			log.Printf("[DIFF] req: %v\n\t%s\n\torig (%d): %v\n\tdiff (%d): %v\n", r, strings.Join(hexKeys, "\n\t"), resp.GetKeyCount(), resp, diffResp.GetKeyCount(), diffResp)
 		}
 	}
 }

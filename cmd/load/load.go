@@ -144,7 +144,7 @@ func hfileUrlAndName(s string) (string, string) {
 	}
 
 	if !strings.Contains(s, "/") {
-		fmt.Println("URL doens't appear to specify a path -- appending /rpc/HFileService")
+		fmt.Printf("'%s' doens't appear to specify a path. Appending /rpc/HFileService...\n", s)
 		s = s + "/rpc/HFileService"
 	}
 
@@ -157,7 +157,7 @@ func hfileUrlAndName(s string) (string, string) {
 func main() {
 	orig := flag.String("server", "localhost:9999", "URL of hfile server")
 	rawDiff := flag.String("diff", "", "URL of second hfile server to compare")
-	collection := flag.String("collection", "testdata", "name of collection")
+	collection := flag.String("collection", "", "name of collection")
 	graphite := report.Flag()
 	workers := flag.Int("workers", 8, "worker pool size")
 	qps := flag.Int("qps", 100, "qps to attempt")
@@ -172,6 +172,22 @@ func main() {
 
 	rttName := "rtt"
 	server, name := hfileUrlAndName(*orig)
+
+	if collection == nil || len(*collection) < 1 {
+		fmt.Println("--collection is required")
+		c := thttp.NewThriftHttpRpcClient(server)
+		r := &gen.InfoRequest{}
+
+		if resp, err := c.GetInfo(r); err != nil {
+			fmt.Println("tried to fetch possible collections but got an error:", err)
+		} else {
+			fmt.Println("possible --collection options:")
+			for _, v := range resp {
+				fmt.Println("\t", v.GetName())
+			}
+		}
+		os.Exit(1)
+	}
 
 	var diffRtt report.Timer
 	var diffs report.Meter

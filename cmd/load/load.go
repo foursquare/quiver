@@ -96,13 +96,13 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 
 	if diff != nil {
 		beforeDiff := time.Now()
-		diffResp, err := diff.GetValuesSingle(r)
+		diffResp, diffErr := diff.GetValuesSingle(r)
 		if err != nil {
-			log.Println("Error fetching value:", err)
+			log.Println("Error fetching diff value:", diffErr)
 		}
 		l.diffRtt.UpdateSince(beforeDiff)
 
-		if !reflect.DeepEqual(resp, diffResp) {
+		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
 			l.diffs.Mark(1)
 			hexKeys := make([]string, len(keys))
 			for i, key := range keys {

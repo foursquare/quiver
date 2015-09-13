@@ -44,6 +44,12 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		if Settings.debug {
 			log.Printf("[GetValuesSingle] key: %s\n", hex.EncodeToString(key))
 		}
+		if idx > 0 && bytes.Equal(req.SortedKeys[idx-1], key) {
+			if prev, ok := res.Values[int32(idx-1)]; ok {
+				res.Values[int32(idx)] = prev
+			}
+			continue
+		}
 		value, err, ok := reader.GetFirst(key)
 		if err != nil {
 			return nil, err

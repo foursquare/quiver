@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"reflect"
@@ -79,7 +80,8 @@ func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceCli
 }
 
 func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: l.randomKeys(1)}
+	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
+	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: l.randomKeys(numKeys)}
 
 	before := time.Now()
 	resp, err := client.GetValuesSingle(r)

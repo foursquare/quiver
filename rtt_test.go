@@ -48,9 +48,22 @@ func TestGetValuesSingle(t *testing.T) {
 					t.Fatalf("mismatched value for key %d (%d): found '%v' expected '%v'", i, key, actual, expected)
 				}
 			}
-
 		}
 	}
+
+	dupes := []int{1, 2, 3, 3, 3, 4}
+	req := GetTestIntReq("compressed", dupes)
+	if r, err := compressed.GetValuesSingle(req); err != nil {
+		t.Fatal("error: ", err)
+	} else {
+		if len(r.Values) != len(dupes) {
+			t.Fatal("wrong number of results... ignored dupes?", len(r.Values), len(dupes))
+		}
+		if r.GetKeyCount() != int32(len(dupes)) {
+			t.Fatal("wrong key count... ignored dupes?", r.GetKeyCount(), len(dupes))
+		}
+	}
+
 }
 
 func BenchmarkUncompressed(b *testing.B) {

@@ -41,16 +41,7 @@ func MakeTestKeyIntList(r *rand.Rand, count, max int) []int {
 		keys[i] = r.Intn(max)
 	}
 	sort.Ints(keys)
-	uniq := make([]int, 0, count)
-	uniq = append(uniq, keys[0])
-
-	for i := 1; i < count; i++ {
-		if keys[i] == keys[i-1] {
-			continue
-		}
-		uniq = append(uniq, keys[i])
-	}
-	return uniq
+	return keys
 }
 
 func GetRandomTestReqs(name string, count, reqSize, max int) []*gen.SingleHFileKeyRequest {

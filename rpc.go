@@ -47,6 +47,7 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		if idx > 0 && bytes.Equal(req.SortedKeys[idx-1], key) {
 			if prev, ok := res.Values[int32(idx-1)]; ok {
 				res.Values[int32(idx)] = prev
+				found++
 			}
 			continue
 		}

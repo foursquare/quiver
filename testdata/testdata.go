@@ -1,4 +1,4 @@
-package main
+package testdata
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"github.com/foursquare/gohfile"
 )
 
-func GetTestIntFile(name string, count int, compress, lock bool) (gen.HFileService, error) {
+func GetTestIntFile(name string, count int, compress, lock bool) (*hfile.CollectionSet, error) {
 	path := fmt.Sprintf("testdata/%s.%d.hfile", name, count)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		cmd := fmt.Sprintf("mockhfile -keys %d -compress=%v %s", count, compress, path)
@@ -20,8 +20,7 @@ func GetTestIntFile(name string, count int, compress, lock bool) (gen.HFileServi
 	} else if err != nil {
 		return nil, err
 	}
-	cs, err := hfile.LoadCollections([]*hfile.CollectionConfig{{name, path, path, lock, testing.Verbose()}}, os.TempDir())
-	return &ThriftRpcImpl{cs}, err
+	return hfile.LoadCollections([]*hfile.CollectionConfig{{name, path, path, lock, testing.Verbose()}}, os.TempDir())
 }
 
 func GetTestIntReq(name string, keys []int) *gen.SingleHFileKeyRequest {

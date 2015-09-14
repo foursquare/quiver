@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/dt/thile/gen"
+	"github.com/dt/thile/util"
 	"github.com/foursquare/gohfile"
 )
 
@@ -125,7 +126,7 @@ func (cs *ThriftRpcImpl) GetValuesMultiSplitKeys(req *gen.MultiHFileSplitKeyRequ
 	scanner := reader.GetScanner()
 	defer scanner.Release()
 
-	for _, parts := range RevProduct(req.SplitKey) {
+	for _, parts := range util.RevProduct(req.SplitKey) {
 		// TODO(davidt): avoid allocing concated key by adding split-key search lower down.
 		key := bytes.Join(parts, nil)
 

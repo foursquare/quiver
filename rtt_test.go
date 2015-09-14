@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/dt/thile/gen"
+	"github.com/dt/thile/testdata"
 	"github.com/foursquare/gohfile"
 )
 
@@ -17,21 +18,22 @@ var maxKey int
 
 func TestMain(m *testing.M) {
 	maxKey = 15000000
-	var err error
-	uncompressed, err = GetTestIntFile("uncompressed", maxKey, false, true)
-	if err != nil {
+	if cs, err := testdata.GetTestIntFile("uncompressed", maxKey, false, true); err != nil {
 		log.Fatal(err)
+	} else {
+		uncompressed = &ThriftRpcImpl{cs}
 	}
-	compressed, err = GetTestIntFile("compressed", maxKey, true, true)
-	if err != nil {
+	if cs, err := testdata.GetTestIntFile("compressed", maxKey, true, true); err != nil {
 		log.Fatal(err)
+	} else {
+		compressed = &ThriftRpcImpl{cs}
 	}
 
 	os.Exit(m.Run())
 }
 
 func TestGetValuesSingle(t *testing.T) {
-	reqs := GetRandomTestReqs("compressed", 10, 5, maxKey)
+	reqs := testdata.GetRandomTestReqs("compressed", 10, 5, maxKey)
 
 	for _, req := range reqs {
 		if r, err := compressed.GetValuesSingle(req); err != nil {
@@ -52,7 +54,7 @@ func TestGetValuesSingle(t *testing.T) {
 	}
 
 	dupes := []int{1, 2, 3, 3, 3, 4}
-	req := GetTestIntReq("compressed", dupes)
+	req := testdata.GetTestIntReq("compressed", dupes)
 	if r, err := compressed.GetValuesSingle(req); err != nil {
 		t.Fatal("error: ", err)
 	} else {
@@ -68,7 +70,7 @@ func TestGetValuesSingle(t *testing.T) {
 
 func BenchmarkUncompressed(b *testing.B) {
 	b.StopTimer()
-	reqs := GetRandomTestReqs("uncompressed", b.N, 5, maxKey)
+	reqs := testdata.GetRandomTestReqs("uncompressed", b.N, 5, maxKey)
 	b.StartTimer()
 
 	for _, req := range reqs {
@@ -80,7 +82,7 @@ func BenchmarkUncompressed(b *testing.B) {
 
 func BenchmarkCompressed(b *testing.B) {
 	b.StopTimer()
-	reqs := GetRandomTestReqs("compressed", b.N, 5, maxKey)
+	reqs := testdata.GetRandomTestReqs("compressed", b.N, 5, maxKey)
 	b.StartTimer()
 
 	for _, req := range reqs {

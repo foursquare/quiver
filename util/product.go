@@ -1,4 +1,4 @@
-package main
+package util
 
 func RevProduct(l [][][]byte) [][][]byte {
 	if len(l) == 0 {

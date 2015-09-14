@@ -42,9 +42,6 @@ func readSettings() []string {
 
 	flag.StringVar(&s.cachePath, "cache", os.TempDir(), "local path to write files fetched (*not* cleaned up automatically)")
 
-	flag.StringVar(&s.graphite, "graphite", "", "graphite server to report to")
-	flag.StringVar(&s.graphitePrefix, "graphite-prefix", "", "prefix to prepend to reported metrics")
-
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr,
 			`
@@ -92,11 +89,12 @@ func getCollectionConfig(args []string) []*hfile.CollectionConfig {
 }
 
 func main() {
+	graphite := report.Flag()
 	args := readSettings()
 
 	report.NewRecorder().
 		EnableGCInfoCollection().
-		ReportToServer(Settings.graphite, Settings.graphitePrefix).
+		MaybeReportTo(graphite).
 		SetAsDefault()
 
 	configs := getCollectionConfig(args)

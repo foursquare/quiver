@@ -42,8 +42,13 @@ type Load struct {
 
 // Pick a random request type to generate and send.
 func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-	// TODO: randomly change up request type generated
-	l.sendSingle(client, diff)
+	switch rand.Int31n(2) {
+	case 0:
+		l.sendMulti(client, diff)
+	default:
+		l.sendSingle(client, diff)
+	}
+
 }
 
 // Generate and send a random GetValuesSingle request.
@@ -71,6 +76,40 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
 			report.Inc("diffs.getValuesSingle")
+			hexKeys := make([]string, len(keys))
+			for i, key := range keys {
+				hexKeys[i] = hex.EncodeToString(key)
+			}
+			log.Printf("[DIFF] req: %v\n\t%s\n\torig (%d): %v\n\tdiff (%d): %v\n", r, strings.Join(hexKeys, "\n\t"), resp.GetKeyCount(), resp, diffResp.GetKeyCount(), diffResp)
+		}
+	}
+}
+
+// Generate and send a random GetValuesSingle request.
+func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
+	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
+	keys := l.randomKeys(numKeys)
+	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: keys}
+
+	before := time.Now()
+	resp, err := client.GetValuesMulti(r)
+	if err != nil {
+		log.Println("Error fetching value:", err)
+	}
+	report.TimeSince(l.rtt+".overall", before)
+	report.TimeSince(l.rtt+".getValuesMulti", before)
+
+	if diff != nil {
+		beforeDiff := time.Now()
+		diffResp, diffErr := diff.GetValuesMulti(r)
+		if diffErr != nil {
+			log.Println("Error fetching diff value:", diffErr)
+		}
+		report.TimeSince(l.diffRtt+".overall", beforeDiff)
+		report.TimeSince(l.diffRtt+".getValuesMulti", beforeDiff)
+
+		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
+			report.Inc("diffs.getValuesMulti")
 			hexKeys := make([]string, len(keys))
 			for i, key := range keys {
 				hexKeys[i] = hex.EncodeToString(key)

@@ -84,6 +84,7 @@ func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 	defer reader.Release()
 
 	res := new(gen.MultiHFileKeyResponse)
+	res.Values = make(map[int32][][]byte)
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {

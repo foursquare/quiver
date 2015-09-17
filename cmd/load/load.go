@@ -30,9 +30,8 @@ type Load struct {
 
 	work chan bool
 
-	rtt     report.Timer
-	diffRtt report.Timer
-	diffs   report.Meter // mis-matched responses.
+	rtt     string
+	diffRtt string
 
 	queueSize report.Guage
 	dropped   report.Meter
@@ -58,18 +57,20 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 	if err != nil {
 		log.Println("Error fetching value:", err)
 	}
-	l.rtt.UpdateSince(before)
+	report.TimeSince(l.rtt+".overall", before)
+	report.TimeSince(l.rtt+".getValuesSingle", before)
 
 	if diff != nil {
 		beforeDiff := time.Now()
 		diffResp, diffErr := diff.GetValuesSingle(r)
-		if err != nil {
+		if diffErr != nil {
 			log.Println("Error fetching diff value:", diffErr)
 		}
-		l.diffRtt.UpdateSince(beforeDiff)
+		report.TimeSince(l.diffRtt+".overall", beforeDiff)
+		report.TimeSince(l.diffRtt+".getValuesSingle", beforeDiff)
 
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
-			l.diffs.Mark(1)
+			report.Inc("diffs.getValuesSingle")
 			hexKeys := make([]string, len(keys))
 			for i, key := range keys {
 				hexKeys[i] = hex.EncodeToString(key)
@@ -208,14 +209,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	var diffRtt report.Timer
-	var diffs report.Meter
+	diffRtt := ""
 	var diff *string
+
 	if rawDiff != nil && len(*rawDiff) > 0 {
 		diffServer, diffName := hfileUrlAndName(*rawDiff)
 		diff = &diffServer
-		diffRtt = r.GetTimer("rtt." + diffName)
-		diffs = r.GetMeter("diffs")
+		diffRtt = "rtt." + diffName
 		rttName = "rtt." + name
 	}
 
@@ -227,9 +227,8 @@ func main() {
 		work:       make(chan bool, (*qps)*(*workers)),
 		dropped:    r.GetMeter("dropped"),
 		queueSize:  r.GetGuage("queue"),
-		rtt:        r.GetTimer(rttName),
+		rtt:        rttName,
 		diffRtt:    diffRtt,
-		diffs:      diffs,
 	}
 
 	if err := l.setKeys(); err != nil {

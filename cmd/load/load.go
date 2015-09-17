@@ -75,6 +75,7 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 		report.TimeSince(l.diffRtt+".getValuesSingle", beforeDiff)
 
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
+			report.Inc("diffs")
 			report.Inc("diffs.getValuesSingle")
 			hexKeys := make([]string, len(keys))
 			for i, key := range keys {
@@ -109,6 +110,7 @@ func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceC
 		report.TimeSince(l.diffRtt+".getValuesMulti", beforeDiff)
 
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
+			report.Inc("diffs")
 			report.Inc("diffs.getValuesMulti")
 			hexKeys := make([]string, len(keys))
 			for i, key := range keys {
@@ -157,7 +159,7 @@ func (l *Load) setKeys() error {
 // Re-fetches a new batch of keys every freq, swapping out the in-use set.
 func (l *Load) startKeyFetcher(freq time.Duration) {
 	for _ = range time.Tick(freq) {
-		log.Println("Fetching new keys...")
+		//log.Println("Fetching new keys...")
 		l.setKeys()
 	}
 }
@@ -249,6 +251,7 @@ func main() {
 	}
 
 	diffRtt := ""
+	diffName := ""
 	var diff *string
 
 	if rawDiff != nil && len(*rawDiff) > 0 {
@@ -274,8 +277,10 @@ func main() {
 		fmt.Println("Failed to fetch testing keys:", err)
 		os.Exit(1)
 	}
-
-	fmt.Printf("Sending %dqps to %s, drawing from %d random keys...\n", *qps, server, len(l.keys))
+	fmt.Printf("Sending %dqps to %s (%s), drawing from %d random keys...\n", *qps, name, server, len(l.keys))
+	if l.diff != nil {
+		fmt.Printf("Diffing against %s (%s)\n", diffName, *l.diff)
+	}
 
 	l.startWorkers(*workers)
 	go l.startKeyFetcher(time.Minute)

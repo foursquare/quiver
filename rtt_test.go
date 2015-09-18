@@ -3,8 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/dt/thile/gen"
@@ -16,23 +14,29 @@ var uncompressed gen.HFileService
 var compressed gen.HFileService
 var maxKey int
 
-func TestMain(m *testing.M) {
+type StartupT interface {
+	Fatal(args ...interface{})
+}
+
+func Setup(t StartupT) {
 	maxKey = 15000000
+	if uncompressed != nil && compressed != nil {
+		return
+	}
 	if cs, err := testdata.GetTestIntFile("uncompressed", maxKey, false, true); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	} else {
 		uncompressed = &ThriftRpcImpl{cs}
 	}
 	if cs, err := testdata.GetTestIntFile("compressed", maxKey, true, true); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	} else {
 		compressed = &ThriftRpcImpl{cs}
 	}
-
-	os.Exit(m.Run())
 }
 
 func TestGetValuesSingle(t *testing.T) {
+	Setup(t)
 	reqs := testdata.GetRandomTestReqs("compressed", 10, 5, maxKey)
 
 	for _, req := range reqs {
@@ -70,6 +74,7 @@ func TestGetValuesSingle(t *testing.T) {
 
 func BenchmarkUncompressed(b *testing.B) {
 	b.StopTimer()
+	Setup(b)
 	reqs := testdata.GetRandomTestReqs("uncompressed", b.N, 5, maxKey)
 	b.StartTimer()
 
@@ -82,6 +87,7 @@ func BenchmarkUncompressed(b *testing.B) {
 
 func BenchmarkCompressed(b *testing.B) {
 	b.StopTimer()
+	Setup(b)
 	reqs := testdata.GetRandomTestReqs("compressed", b.N, 5, maxKey)
 	b.StartTimer()
 

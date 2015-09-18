@@ -22,5 +22,12 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# binaries
+cmd/dummyserver/dummyserver
+cmd/listserving/listserving
+cmd/load/load
 thile
-*.hfile
+
+# test data
+testdata/*.hfile

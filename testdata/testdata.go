@@ -15,8 +15,12 @@ import (
 func GetTestIntFile(name string, count int, compress, lock bool) (*hfile.CollectionSet, error) {
 	path := fmt.Sprintf("testdata/%s.%d.hfile", name, count)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		cmd := fmt.Sprintf("mockhfile -keys %d -compress=%v %s", count, compress, path)
-		return nil, fmt.Errorf("%s doesn't exist! generate with:\n\t%s", path, cmd)
+		err = hfile.GenerateMockHfile(path, count, 4098, compress, false, false)
+		if err != nil {
+			cmd := fmt.Sprintf("mockhfile -keys %d -compress=%v %s", count, compress, path)
+			hfile.GenerateMockHfile(path, count, 4098, compress, false, false)
+			return nil, fmt.Errorf("%s doesn't exist and generation failed: %v.\ngenerate with:\n\t%s", path, err, cmd)
+		}
 	} else if err != nil {
 		return nil, err
 	}

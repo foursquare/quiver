@@ -47,8 +47,8 @@ func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceCli
 	switch {
 	case i < 15:
 		l.sendGetIterator(client, diff)
-	case i < 30:
-		l.sendPrefixes(client, diff)
+	// case i < 30:
+	// 	l.sendPrefixes(client, diff)
 	case i < 50:
 		l.sendMulti(client, diff)
 	default:

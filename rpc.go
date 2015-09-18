@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"math/rand"
 	"strings"
 
 	"github.com/dt/thile/gen"
@@ -239,6 +240,26 @@ func GetCollectionInfo(r *hfile.Reader, keySampleSize int) (*gen.HFileInfo, erro
 	c := int64(r.EntryCount)
 	i.NumElements = &c
 	i.FirstKey, _ = r.FirstKey()
+
+	it := r.GetIterator()
+	defer it.Release()
+
+	if keySampleSize > 0 {
+		pr := float64(keySampleSize) / float64(c)
+		buf := make([][]byte, keySampleSize)
+		found := 0
+		next, err := it.Next()
+		for next && found < keySampleSize {
+			if rand.Float64() < pr {
+				buf[found] = it.Key()
+			}
+			next, err = it.Next()
+			if err != nil {
+				return nil, err
+			}
+		}
+		i.RandomKeys = buf
+	}
 	return i, nil
 }
 

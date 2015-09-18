@@ -126,7 +126,7 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 	prefixes := make([][]byte, len(fullKeys))
 
 	for i, v := range fullKeys {
-		prefixes[i] = v[:len(v)/2]
+		prefixes[i] = v[:len(v)-2]
 	}
 	sort.Sort(util.Keys(prefixes))
 	r := &gen.PrefixRequest{HfileName: &l.collection, SortedKeys: prefixes}

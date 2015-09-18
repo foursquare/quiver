@@ -217,7 +217,7 @@ func (cs *ThriftRpcImpl) GetIterator(req *gen.IteratorRequest) (*gen.IteratorRes
 		if bytes.Equal(lastKey, it.Key()) {
 			skipKeys = skipKeys + 1
 		} else {
-			skipKeys = 0
+			skipKeys = 1
 		}
 		lastKey = it.Key()
 

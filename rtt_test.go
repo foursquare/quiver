@@ -23,12 +23,12 @@ func Setup(t StartupT) {
 	if uncompressed != nil && compressed != nil {
 		return
 	}
-	if cs, err := testdata.GetTestIntFile("uncompressed", maxKey, false, true); err != nil {
+	if cs, err := hfile.TestdataCollectionSet("uncompressed", maxKey, false, true); err != nil {
 		t.Fatal(err)
 	} else {
 		uncompressed = &ThriftRpcImpl{cs}
 	}
-	if cs, err := testdata.GetTestIntFile("compressed", maxKey, true, true); err != nil {
+	if cs, err := hfile.TestdataCollectionSet("compressed", maxKey, true, true); err != nil {
 		t.Fatal(err)
 	} else {
 		compressed = &ThriftRpcImpl{cs}

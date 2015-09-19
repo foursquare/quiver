@@ -1,31 +1,13 @@
 package testdata
 
 import (
-	"fmt"
 	"math/rand"
-	"os"
 	"sort"
-	"testing"
 
 	"github.com/dt/thile/gen"
 
 	"github.com/foursquare/gohfile"
 )
-
-func GetTestIntFile(name string, count int, compress, lock bool) (*hfile.CollectionSet, error) {
-	path := fmt.Sprintf("testdata/%s.%d.hfile", name, count)
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err = hfile.GenerateMockHfile(path, count, 4098, compress, false, false)
-		if err != nil {
-			cmd := fmt.Sprintf("mockhfile -keys %d -compress=%v %s", count, compress, path)
-			hfile.GenerateMockHfile(path, count, 4098, compress, false, false)
-			return nil, fmt.Errorf("%s doesn't exist and generation failed: %v.\ngenerate with:\n\t%s", path, err, cmd)
-		}
-	} else if err != nil {
-		return nil, err
-	}
-	return hfile.LoadCollections([]*hfile.CollectionConfig{{name, path, path, lock, testing.Verbose()}}, os.TempDir())
-}
 
 func GetTestIntReq(name string, keys []int) *gen.SingleHFileKeyRequest {
 	keyBytes := make([][]byte, len(keys))

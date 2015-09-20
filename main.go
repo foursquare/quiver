@@ -12,9 +12,9 @@ import (
 	_ "expvar"
 	_ "net/http/pprof"
 
+	"github.com/dt/curator.go"
 	"github.com/dt/go-curator-discovery"
 	"github.com/dt/go-metrics-reporting"
-	"github.com/flier/curator.go"
 	"github.com/foursquare/gohfile"
 )
 

@@ -30,16 +30,6 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	reader.EnforceKeyOrder = false
 	defer reader.Release()
 
-	if req.PerKeyValueLimit != nil {
-		// TODO(davidt) impl
-		log.Println("[GetValuesSingle] PerKeyValueLimit. oh well.")
-	}
-
-	if req.CountOnly != nil {
-		// TODO(davidt) impl
-		log.Println("[GetValuesSingle] CountOnly. oh well.")
-	}
-
 	res := new(gen.SingleHFileKeyResponse)
 	res.Values = make(map[int32][]byte)
 	found := int32(0)
@@ -61,7 +51,13 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		}
 		if ok {
 			found++
-			res.Values[int32(idx)] = value
+			if !req.GetCountOnly() {
+				if req.PerKeyValueLimit != nil {
+					res.Values[int32(idx)] = value[:req.GetPerKeyValueLimit()]
+				} else {
+					res.Values[int32(idx)] = value
+				}
+			}
 		}
 	}
 

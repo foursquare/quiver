@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/dt/thile/gen"
-
 	"github.com/foursquare/gohfile"
 )
 

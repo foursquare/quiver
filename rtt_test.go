@@ -14,11 +14,9 @@ var uncompressed gen.HFileService
 var compressed gen.HFileService
 var maxKey int
 
-type StartupT interface {
+func Setup(t interface {
 	Fatal(args ...interface{})
-}
-
-func Setup(t StartupT) {
+}) {
 	maxKey = 15000000
 	if uncompressed != nil && compressed != nil {
 		return

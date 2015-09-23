@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/foursquare/gohfile"
 )
 
 type CollectionSpecList struct {
 	Collections []SingleCollectionSpec
-}
-type Registration struct {
-	base, name string
 }
 
 type SingleCollectionSpec struct {
@@ -27,13 +25,55 @@ type SingleCollectionSpec struct {
 	Ondemand      bool
 }
 
-func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, []Registration, error) {
+func getCollectionConfig(args []string) []*hfile.CollectionConfig {
+	if Settings.configJsonUrl != "" {
+		if len(args) > 0 {
+			log.Fatalln("Only one of command-line collection specs or json config may be used.")
+		}
+		return ConfigsFromJsonUrl(Settings.configJsonUrl)
+	}
+	return ConfigsFromCommandline(args)
+}
+
+func ConfigsFromCommandline(args []string) []*hfile.CollectionConfig {
+	configs := make([]*hfile.CollectionConfig, len(args))
+
+	for i, pair := range args {
+		nameAndPath := strings.SplitN(pair, "=", 2)
+		if len(nameAndPath) != 2 {
+			log.Fatal("collections must be specified in the form 'name=path'")
+		}
+
+		name, sfunc, total, part := nameAndPath[0], "_", "1", "0"
+
+		if details := strings.SplitN(name, "/", 4); len(details) == 4 {
+			name = details[0]
+			name, sfunc, total, part = details[0], details[1], details[2], details[3]
+		}
+
+		configs[i] = &hfile.CollectionConfig{
+			Name:            name,
+			SourcePath:      nameAndPath[1],
+			LocalPath:       nameAndPath[1],
+			InMem:           Settings.mlock,
+			Debug:           Settings.debug,
+			ParentName:      name,
+			ShardFunction:   sfunc,
+			Partition:       part,
+			TotalPartitions: total,
+		}
+	}
+
+	return configs
+}
+
+func ConfigsFromJsonUrl(url string) []*hfile.CollectionConfig {
 	if Settings.debug {
 		log.Printf("[ConfigsFromJsonUrl] Fetching config from %s...\n", url)
 	}
 	res, err := http.Get(url)
 	if err != nil {
-		return nil, nil, err
+		log.Fatal(err)
 	}
 	if Settings.debug {
 		log.Printf("[ConfigsFromJsonUrl] Fetched. Parsing...\n")
@@ -43,14 +83,13 @@ func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, []Registration, 
 	var specs CollectionSpecList
 
 	if err := json.NewDecoder(res.Body).Decode(&specs); err != nil {
-		return nil, nil, err
+		log.Fatal(err)
 	}
 
 	if Settings.debug {
 		log.Printf("[ConfigsFromJsonUrl] Found %d collections.\n", len(specs.Collections))
 	}
 
-	reg := make([]Registration, len(specs.Collections))
 	ret := make([]*hfile.CollectionConfig, len(specs.Collections))
 	for i, spec := range specs.Collections {
 		if spec.Url != "" {
@@ -60,18 +99,18 @@ func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, []Registration, 
 			if spec.Ondemand {
 				mlock = false
 			}
-			ret[i] = &hfile.CollectionConfig{name, spec.Url, "", mlock, Settings.debug}
 
-			capacity := spec.Capacity
-			sfunc := spec.Function
-			if len(sfunc) < 1 {
-				capacity = 1
-				sfunc = "_"
+			ret[i] = &hfile.CollectionConfig{
+				Name:            name,
+				SourcePath:      spec.Url,
+				LocalPath:       "",
+				InMem:           mlock,
+				Debug:           Settings.debug,
+				ParentName:      spec.Collection,
+				ShardFunction:   spec.Function,
+				Partition:       fmt.Sprintf("%d", spec.Partition),
+				TotalPartitions: fmt.Sprintf("%d", spec.Capacity),
 			}
-
-			base := fmt.Sprintf("%s/%s/%d", spec.Collection, sfunc, capacity)
-
-			reg[i] = Registration{base: base, name: fmt.Sprintf("%d", spec.Partition)}
 		}
 	}
 
@@ -83,6 +122,5 @@ func ConfigsFromJsonUrl(url string) ([]*hfile.CollectionConfig, []Registration, 
 			log.Printf("\t%s", cfg.Name)
 		}
 	}
-
-	return ret, reg, nil
+	return ret
 }

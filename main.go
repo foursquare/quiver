@@ -6,14 +6,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
-	"time"
 
 	_ "expvar"
 	_ "net/http/pprof"
 
-	"github.com/dt/curator.go"
-	"github.com/dt/go-curator-discovery"
 	"github.com/dt/go-metrics-reporting"
 	"github.com/foursquare/gohfile"
 )
@@ -68,33 +64,6 @@ Usage: %s [options] col1=path1 col2=path2 ...
 	return flag.Args()
 }
 
-func getCollectionConfig(args []string) ([]*hfile.CollectionConfig, []Registration) {
-	var configs []*hfile.CollectionConfig
-	var reg []Registration
-	var err error
-
-	if Settings.configJsonUrl != "" {
-		if len(args) > 0 {
-			log.Fatalln("Only one of command-line collection specs or json config may be used.")
-		}
-		configs, reg, err = ConfigsFromJsonUrl(Settings.configJsonUrl)
-		if err != nil {
-			log.Fatalln(err)
-		}
-	} else {
-		configs = make([]*hfile.CollectionConfig, len(args))
-		for i, pair := range args {
-			parts := strings.SplitN(pair, "=", 2)
-			if len(parts) != 2 {
-				log.Fatal("collections must be specified in the form 'name=path'")
-			}
-			configs[i] = &hfile.CollectionConfig{parts[0], parts[1], parts[1], Settings.mlock, Settings.debug}
-		}
-	}
-
-	return configs, reg
-}
-
 func main() {
 	graphite := report.Flag()
 	args := readSettings()
@@ -104,7 +73,7 @@ func main() {
 		MaybeReportTo(graphite).
 		SetAsDefault()
 
-	configs, reg := getCollectionConfig(args)
+	configs := getCollectionConfig(args)
 
 	log.Printf("Loading collections (debug %v)...\n", Settings.debug)
 	cs, err := hfile.LoadCollections(configs, Settings.cachePath)
@@ -112,36 +81,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	name, err := os.Hostname()
+	hostname, err := os.Hostname()
 	if err != nil {
-		name = "localhost"
+		hostname = "localhost"
 	}
 
 	if Settings.discoveryPath != "" {
-		if len(reg) < 1 {
-			log.Fatal("no registrations! (service reg only supported when configured via json)")
-		}
-		if Settings.zk == "" {
-			log.Fatal("Specified discovery path but not zk?", Settings.zk)
-		}
-		retryPolicy := curator.NewExponentialBackoffRetry(time.Second, 3, 15*time.Second)
-		zk := curator.NewClient(Settings.zk, retryPolicy)
-		if err := zk.Start(); err != nil {
-			log.Fatal(err)
-		}
+		zk := RegisterInDiscovery(hostname, Settings.discoveryPath, configs)
 		defer zk.Close()
-
-		for _, i := range reg {
-			disco := discovery.NewServiceDiscovery(zk, curator.JoinPath(Settings.discoveryPath, i.base))
-			if err := disco.MaintainRegistrations(); err != nil {
-				log.Fatal(err)
-			}
-			s := discovery.NewSimpleServiceInstance(i.name, name, Settings.port)
-			disco.Register(s)
-		}
 	}
 
-	log.Printf("Serving on http://%s:%d/ \n", name, Settings.port)
+	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)
 
 	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs))
 	http.Handle("/", &DebugHandler{cs})

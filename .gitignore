@@ -27,7 +27,7 @@ _testmain.go
 cmd/dummyserver/dummyserver
 cmd/listserving/listserving
 cmd/load/load
-thile
+quiver
 
 # test data
 testdata/*.hfile

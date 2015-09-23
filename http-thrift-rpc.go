@@ -6,7 +6,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/dt/go-metrics-reporting"
-	"github.com/dt/thile/gen"
+	"github.com/dt/quiver/gen"
 	"github.com/foursquare/gohfile"
 )
 

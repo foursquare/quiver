@@ -8,8 +8,8 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/dt/thile/gen"
-	"github.com/dt/thile/util"
+	"github.com/dt/quiver/gen"
+	"github.com/dt/quiver/util"
 	"github.com/foursquare/gohfile"
 )
 

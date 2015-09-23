@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/dt/thile/gen"
+	"github.com/dt/quiver/gen"
 	"github.com/foursquare/gohfile"
 )
 

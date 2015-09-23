@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/dt/thile/gen"
-	"github.com/dt/thile/testdata"
+	"github.com/dt/quiver/gen"
+	"github.com/dt/quiver/testdata"
 	"github.com/foursquare/gohfile"
 )
 

@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dt/quiver/client"
-	"github.com/dt/quiver/gen"
+	"github.com/foursquare/quiver/client"
+	"github.com/foursquare/quiver/gen"
 )
 
 func removeWebhdfs(s string) string {

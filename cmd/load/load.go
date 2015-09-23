@@ -16,9 +16,9 @@ import (
 
 	"github.com/dt/go-metrics"
 	"github.com/dt/go-metrics-reporting"
-	"github.com/dt/quiver/client"
-	"github.com/dt/quiver/gen"
-	"github.com/dt/quiver/util"
+	"github.com/foursquare/quiver/client"
+	"github.com/foursquare/quiver/gen"
+	"github.com/foursquare/quiver/util"
 )
 
 type Load struct {

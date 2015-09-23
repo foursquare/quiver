@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/dt/quiver/gen"
+	"github.com/foursquare/quiver/gen"
 )
 
 type ThriftOverHttpClient struct {

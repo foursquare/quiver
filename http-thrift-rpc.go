@@ -6,8 +6,8 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/dt/go-metrics-reporting"
-	"github.com/dt/quiver/gen"
 	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/gen"
 )
 
 type HttpRpcHandler struct {

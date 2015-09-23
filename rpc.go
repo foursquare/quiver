@@ -8,9 +8,9 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/dt/quiver/gen"
-	"github.com/dt/quiver/util"
 	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/gen"
+	"github.com/foursquare/quiver/util"
 )
 
 type ThriftRpcImpl struct {

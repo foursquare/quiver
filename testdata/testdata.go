@@ -4,8 +4,8 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/dt/quiver/gen"
 	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/gen"
 )
 
 func GetTestIntReq(name string, keys []int) *gen.SingleHFileKeyRequest {

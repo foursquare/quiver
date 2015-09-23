@@ -5,9 +5,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/dt/quiver/gen"
-	"github.com/dt/quiver/testdata"
 	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/gen"
+	"github.com/foursquare/quiver/testdata"
 )
 
 var uncompressed gen.HFileService

@@ -1,4 +1,6 @@
 # Quiver Key-Value Server
+[![Build Status](https://api.travis-ci.org/foursquare/quiver.svg)](https://travis-ci.org/foursquare/quiver)
+
 A light-weight server for querying immutable data stored in HFiles
 
 Quiver provides a low-latency server that can be run directly top of large, generated datasets commonly output by offline/"big data" pipelines -- as an alternative to trying to bulk-load their output back into a mutable databases.

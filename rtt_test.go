@@ -17,7 +17,7 @@ var maxKey int
 func Setup(t interface {
 	Fatal(args ...interface{})
 }) {
-	maxKey = 15000000
+	maxKey = 5000000
 	if uncompressed != nil && compressed != nil {
 		return
 	}

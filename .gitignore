@@ -24,10 +24,10 @@ _testmain.go
 *.prof
 
 # binaries
-cmd/dummyserver/dummyserver
-cmd/listserving/listserving
-cmd/load/load
-quiver
+/cmd/dummyserver/dummyserver
+/cmd/listserving/listserving
+/cmd/load/load
+/quiver
 
 # test data
-testdata/*.hfile
+/testdata/*.hfile

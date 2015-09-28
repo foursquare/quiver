@@ -4,21 +4,14 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"log"
-	"math"
-	"math/rand"
 	"os"
-	"reflect"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/dt/go-metrics"
 	"github.com/dt/go-metrics-reporting"
 	"github.com/dt/httpthrift"
 	"github.com/foursquare/quiver/gen"
-	"github.com/foursquare/quiver/util"
 )
 
 type Load struct {
@@ -41,208 +34,9 @@ type Load struct {
 	sync.RWMutex
 }
 
-// Pick a random request type to generate and send.
-func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-	i := rand.Int31n(100)
-	switch {
-	case i < 15:
-		l.sendGetIterator(client, diff)
-	// case i < 30:
-	// 	l.sendPrefixes(client, diff)
-	case i < 50:
-		l.sendMulti(client, diff)
-	default:
-		l.sendSingle(client, diff)
-	}
-
-}
-
-// Generate and send a random GetValuesSingle request.
-func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
-	keys := l.randomKeys(numKeys)
-	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: keys}
-
-	before := time.Now()
-	resp, err := client.GetValuesSingle(r)
-	if err != nil {
-		log.Println("[GetValuesSingle] Error fetching value:", err, util.PrettyKeys(keys))
-	}
-	report.TimeSince(l.rtt+".overall", before)
-	report.TimeSince(l.rtt+".getValuesSingle", before)
-
-	if diff != nil {
-		beforeDiff := time.Now()
-		diffResp, diffErr := diff.GetValuesSingle(r)
-		if diffErr != nil {
-			log.Println("[GetValuesSingle] Error fetching diff value:", diffErr, util.PrettyKeys(keys))
-		}
-		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".getValuesSingle", beforeDiff)
-
-		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
-			report.Inc("diffs")
-			report.Inc("diffs.getValuesSingle")
-			log.Printf("[DIFF-getValuesSingle] req: %v\n%s\torig (%d): %v\n\tdiff (%d): %v\n", r, util.PrettyKeys(keys), resp.GetKeyCount(), resp, diffResp.GetKeyCount(), diffResp)
-		}
-	}
-}
-
-// Generate and send a random GetValuesSingle request.
-func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
-	keys := l.randomKeys(numKeys)
-	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: keys}
-
-	before := time.Now()
-	resp, err := client.GetValuesMulti(r)
-	if err != nil {
-		log.Println("[GetValuesMulti] Error fetching value:", err, util.PrettyKeys(keys))
-	}
-	report.TimeSince(l.rtt+".overall", before)
-	report.TimeSince(l.rtt+".getValuesMulti", before)
-
-	if diff != nil {
-		beforeDiff := time.Now()
-		diffResp, diffErr := diff.GetValuesMulti(r)
-		if diffErr != nil {
-			log.Println("[GetValuesMulti] Error fetching diff value:", diffErr, util.PrettyKeys(keys))
-		}
-		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".getValuesMulti", beforeDiff)
-
-		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
-			report.Inc("diffs")
-			report.Inc("diffs.getValuesMulti")
-			log.Printf("[DIFF-getValuesMulti] req: %v\n \torig: %v\n\n\tdiff: %v\n", r, resp, diffResp)
-		}
-	}
-}
-
-// Generate and send a random GetValuesSingle request.
-func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
-	fullKeys := l.randomKeys(numKeys)
-	prefixes := make([][]byte, len(fullKeys))
-
-	for i, v := range fullKeys {
-		prefixes[i] = v[:len(v)-2]
-	}
-	sort.Sort(util.Keys(prefixes))
-	r := &gen.PrefixRequest{HfileName: &l.collection, SortedKeys: prefixes}
-
-	before := time.Now()
-	resp, err := client.GetValuesForPrefixes(r)
-	if err != nil {
-		log.Println("[GetValuesForPrefixes] Error fetching value:", err, util.PrettyKeys(prefixes))
-	}
-	report.TimeSince(l.rtt+".overall", before)
-	report.TimeSince(l.rtt+".GetValuesForPrefixes", before)
-
-	if diff != nil {
-		beforeDiff := time.Now()
-		diffResp, diffErr := diff.GetValuesForPrefixes(r)
-		if diffErr != nil {
-			log.Println("[GetValuesForPrefixes] Error fetching diff value:", diffErr, util.PrettyKeys(prefixes))
-		}
-		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".GetValuesForPrefixes", beforeDiff)
-
-		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
-			report.Inc("diffs")
-			report.Inc("diffs.GetValuesForPrefixes")
-			log.Printf("[DIFF-GetValuesForPrefixes] req: %v\n \torig: %v\n\n\tdiff: %v\n", r, resp, diffResp)
-		}
-	}
-}
-
-// Generate and send a random GetValuesSingle request.
-func (l *Load) sendGetIterator(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-
-	includeValues := true
-	k := l.randomKey()
-	lim := int32(10)
-	r := &gen.IteratorRequest{HfileName: &l.collection, IncludeValues: &includeValues, LastKey: k, ResponseLimit: &lim}
-
-	before := time.Now()
-	resp, err := client.GetIterator(r)
-	if err != nil {
-		log.Println("[GetIterator] Error fetching value:", err, k)
-	}
-	report.TimeSince(l.rtt+".overall", before)
-	report.TimeSince(l.rtt+".GetIterator", before)
-
-	if diff != nil {
-		beforeDiff := time.Now()
-		diffResp, diffErr := diff.GetIterator(r)
-		if diffErr != nil {
-			log.Println("[GetIterator] Error fetching diff value:", diffErr, k)
-		}
-		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".GetIterator", beforeDiff)
-
-		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
-			report.Inc("diffs")
-			report.Inc("diffs.GetIterator")
-			log.Printf("[DIFF-GetIterator] req: %v\n", r)
-			log.Printf("[DIFF-GetIterator] orig (skip %d): %v\n", resp.GetSkipKeys(), resp)
-			log.Printf("[DIFF-GetIterator] diff (skip %d): %v\n", diffResp.GetSkipKeys(), diffResp)
-		}
-	}
-}
-
-func (l *Load) randomKeys(count int) [][]byte {
-	indexes := make([]int, count)
-	l.RLock()
-	for i := 0; i < count; i++ {
-		indexes[i] = rand.Intn(len(l.keys))
-	}
-	sort.Ints(indexes)
-
-	out := make([][]byte, count)
-	for i := 0; i < count; i++ {
-		out[i] = l.keys[indexes[i]]
-	}
-	l.RUnlock()
-	return out
-}
-
-func (l *Load) randomKey() []byte {
-	l.RLock()
-	defer l.RUnlock()
-	return l.keys[rand.Intn(len(l.keys))]
-}
-
 func GetQuiverClient(url string) *gen.HFileServiceClient {
 	recv, send := httpthrift.NewClientProts(url)
 	return gen.NewHFileServiceClientProtocol(nil, recv, send)
-}
-
-// Fetches l.sample random keys for l.collection, sorts them and overwrites (with locking) l.keys.
-func (l *Load) setKeys() error {
-	c := GetQuiverClient(l.server)
-	r := &gen.InfoRequest{&l.collection, l.sample}
-
-	if resp, err := c.GetInfo(r); err != nil {
-		return err
-	} else {
-		if len(resp) < 1 || len(resp[0].RandomKeys) < 1 {
-			return fmt.Errorf("Response (len %d) contained no keys!", len(resp))
-		}
-		sort.Sort(util.Keys(resp[0].RandomKeys))
-		l.Lock()
-		l.keys = resp[0].RandomKeys
-		l.Unlock()
-		return nil
-	}
-}
-
-// Re-fetches a new batch of keys every freq, swapping out the in-use set.
-func (l *Load) startKeyFetcher(freq time.Duration) {
-	for _ = range time.Tick(freq) {
-		//log.Println("Fetching new keys...")
-		l.setKeys()
-	}
 }
 
 // Feeds the work channel at requested qps.
@@ -257,53 +51,6 @@ func (l *Load) generator(qps int) {
 			l.dropped.Mark(1)
 		}
 	}
-}
-
-// starts count worker processes, each with their own thttp client(s), watching the work chan.
-func (l *Load) startWorkers(count int) {
-	for i := 0; i < count; i++ {
-		go func() {
-			client := GetQuiverClient(l.server)
-			var diff *gen.HFileServiceClient
-			if l.diff != nil && len(*l.diff) > 0 {
-				diff = GetQuiverClient(*l.diff)
-			}
-			for {
-				<-l.work
-				l.sendOne(client, diff)
-			}
-		}()
-	}
-}
-
-func PrintSummary(rttName, diffRtt string, isDiffing bool) {
-	du := float64(time.Millisecond)
-	overall := report.GetDefault().Get(rttName + ".overall").(metrics.Timer)
-
-	if isDiffing {
-		diffOverall := report.GetDefault().Get(diffRtt + ".overall").(metrics.Timer)
-		useful := []float64{0.50, 0.90, 0.99}
-		ps, psDiff := overall.Percentiles(useful), diffOverall.Percentiles(useful)
-		fmt.Printf("%10s\t\t%10s\n", rttName, diffRtt)
-		fmt.Printf("\tp99 %6.2fms\t%6.2fms\t(%6.2fms)\n", ps[2]/du, psDiff[2]/du, (ps[2]-psDiff[2])/du)
-		fmt.Printf("\tp90 %6.2fms\t%6.2fms\t(%6.2fms)\n", ps[1]/du, psDiff[1]/du, (ps[1]-psDiff[1])/du)
-		fmt.Printf("\tp50 %6.2fms\t%6.2fms\t(%6.2fms)\n", ps[0]/du, psDiff[0]/du, (ps[0]-psDiff[0])/du)
-		report.GetDefault().Each(func(stat string, i interface{}) {
-			if strings.HasPrefix(stat, "diffs.") {
-				switch m := i.(type) {
-				case metrics.Meter:
-					fmt.Printf("%s %d (%d total)\n", m.Rate1(), m.Count())
-				default:
-					fmt.Printf("%s %T %v\n", m, m)
-				}
-			}
-		})
-	} else {
-		fmt.Printf("%s\t(%6.2fqps)\tp99 %6.2fms\n", rttName, overall.Rate1(), overall.Percentile(0.99)/du)
-	}
-	queue := report.GetDefault().Get("queue").(metrics.Gauge).Value()
-	dropped := report.GetDefault().Get("dropped").(metrics.Meter)
-	fmt.Printf("queue %d (dropped: %.2f)\n", queue, dropped.Rate1())
 }
 
 // given a string like testing=fsan44:20202, return (http://fsan44:20202/rpc/HFileService, testing).

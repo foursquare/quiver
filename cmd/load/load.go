@@ -16,7 +16,7 @@ import (
 
 	"github.com/dt/go-metrics"
 	"github.com/dt/go-metrics-reporting"
-	"github.com/foursquare/quiver/client"
+	"github.com/dt/httpthrift"
 	"github.com/foursquare/quiver/gen"
 	"github.com/foursquare/quiver/util"
 )
@@ -213,9 +213,14 @@ func (l *Load) randomKey() []byte {
 	return l.keys[rand.Intn(len(l.keys))]
 }
 
+func GetQuiverClient(url string) *gen.HFileServiceClient {
+	recv, send := httpthrift.NewClientProts(url)
+	return gen.NewHFileServiceClientProtocol(nil, recv, send)
+}
+
 // Fetches l.sample random keys for l.collection, sorts them and overwrites (with locking) l.keys.
 func (l *Load) setKeys() error {
-	c := thttp.NewThriftHttpRpcClient(l.server)
+	c := GetQuiverClient(l.server)
 	r := &gen.InfoRequest{&l.collection, l.sample}
 
 	if resp, err := c.GetInfo(r); err != nil {
@@ -258,10 +263,10 @@ func (l *Load) generator(qps int) {
 func (l *Load) startWorkers(count int) {
 	for i := 0; i < count; i++ {
 		go func() {
-			client := thttp.NewThriftHttpRpcClient(l.server)
+			client := GetQuiverClient(l.server)
 			var diff *gen.HFileServiceClient
 			if l.diff != nil && len(*l.diff) > 0 {
-				diff = thttp.NewThriftHttpRpcClient(*l.diff)
+				diff = GetQuiverClient(*l.diff)
 			}
 			for {
 				<-l.work
@@ -341,7 +346,7 @@ func main() {
 
 	if collection == nil || len(*collection) < 1 {
 		fmt.Println("--collection is required")
-		c := thttp.NewThriftHttpRpcClient(server)
+		c := GetQuiverClient(server)
 		r := &gen.InfoRequest{}
 
 		if resp, err := c.GetInfo(r); err != nil {

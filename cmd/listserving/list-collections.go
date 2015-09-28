@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/foursquare/quiver/client"
+	"github.com/dt/httpthrift"
 	"github.com/foursquare/quiver/gen"
 )
 
@@ -33,7 +33,8 @@ func main() {
 		url = "http://" + url
 	}
 
-	client := thttp.NewThriftHttpRpcClient(url)
+	recv, send := httpthrift.NewClientProts(url)
+	client := gen.NewHFileServiceClientProtocol(nil, recv, send)
 
 	r := &gen.InfoRequest{nil, nil}
 	if resp, err := client.GetInfo(r); err != nil {

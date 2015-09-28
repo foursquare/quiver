@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/dt/curator.go"
@@ -10,20 +11,35 @@ import (
 	"github.com/foursquare/gohfile"
 )
 
-func RegisterInDiscovery(hostname, base string, configs []*hfile.CollectionConfig) curator.CuratorFramework {
+type Registrations struct {
+	existing []*discovery.ServiceDiscovery
+
+	zk curator.CuratorFramework
+
+	sync.Mutex
+}
+
+func (r *Registrations) Connect() {
 	if Settings.zk == "" {
 		log.Fatal("Specified discovery path but not zk?", Settings.zk)
-	}
-	if hostname == "localhost" {
-		log.Fatal("invalid hostname for service discovery registration:", hostname)
 	}
 
 	retryPolicy := curator.NewExponentialBackoffRetry(time.Second, 3, 15*time.Second)
 
-	zk := curator.NewClient(Settings.zk, retryPolicy)
-	if err := zk.Start(); err != nil {
+	r.zk = curator.NewClient(Settings.zk, retryPolicy)
+
+	if err := r.zk.Start(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (r *Registrations) Join(hostname, base string, configs []*hfile.CollectionConfig) {
+	if hostname == "localhost" {
+		log.Fatal("invalid hostname for service discovery registration:", hostname)
+	}
+
+	r.Lock()
+	defer r.Unlock()
 
 	for _, i := range configs {
 		sfunc := i.ShardFunction
@@ -36,13 +52,25 @@ func RegisterInDiscovery(hostname, base string, configs []*hfile.CollectionConfi
 
 		base := fmt.Sprintf("%s/%s/%s", i.ParentName, sfunc, capacity)
 
-		disco := discovery.NewServiceDiscovery(zk, curator.JoinPath(Settings.discoveryPath, base))
+		disco := discovery.NewServiceDiscovery(r.zk, curator.JoinPath(Settings.discoveryPath, base))
 		if err := disco.MaintainRegistrations(); err != nil {
 			log.Fatal(err)
 		}
 		s := discovery.NewSimpleServiceInstance(i.Partition, hostname, Settings.port)
 		disco.Register(s)
+		r.existing = append(r.existing, disco)
 	}
+}
 
-	return zk
+func (r *Registrations) Leave() {
+	r.Lock()
+	defer r.Unlock()
+	for _, reg := range r.existing {
+		reg.UnregisterAll()
+	}
+}
+
+func (r *Registrations) Close() {
+	r.Leave()
+	r.zk.Close()
 }

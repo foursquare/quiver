@@ -86,9 +86,12 @@ func main() {
 		hostname = "localhost"
 	}
 
+	registrations := new(Registrations)
+
 	if Settings.discoveryPath != "" {
-		zk := RegisterInDiscovery(hostname, Settings.discoveryPath, configs)
-		defer zk.Close()
+		registrations.Connect()
+		registrations.Join(hostname, Settings.discoveryPath, configs)
+		defer registrations.Close()
 	}
 
 	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)

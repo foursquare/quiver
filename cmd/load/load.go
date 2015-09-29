@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/dt/go-curator-discovery"
 	"github.com/dt/go-metrics-reporting"
 	"github.com/dt/httpthrift"
 	"github.com/foursquare/quiver/gen"
@@ -56,12 +58,47 @@ func (l *Load) generator(qps int) {
 }
 
 // given a string like testing=fsan44:20202, return (http://fsan44:20202/rpc/HFileService, testing).
-func hfileUrlAndName(s string) (func() string, string) {
+func hfileUrlAndName(s string) (func() string, string, discovery.Conn) {
 	name := strings.NewReplacer("http://", "", ".", "_", ":", "_", "/", "_").Replace(s)
 
 	if parts := strings.Split(s, "="); len(parts) > 1 {
 		s = parts[1]
 		name = parts[0]
+	}
+
+	if strings.HasPrefix(s, "zk:") {
+		if len(zk) < 1 {
+			log.Fatal("must specify --zk to use discovery")
+		}
+		s := s[len("zk:"):]
+		shardAndPath := strings.Split(s, "@")
+		if len(shardAndPath) != 2 {
+			log.Fatal("format: zk:$SHARD@$PATH")
+		}
+		shard, path := shardAndPath[0], shardAndPath[1]
+
+		disco, conn, err := discovery.NewServiceDiscoveryAndConn(zk, path)
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			disco.Watch()
+		}
+
+		log.Printf("discovering instances of %s at %s\n", shard, path)
+		provider := disco.Provider(shard)
+		f := func() string {
+			i, err := provider.GetInstance()
+			if err != nil {
+				log.Println("error discovering instance:", err)
+			} else if i == nil {
+				log.Println("no instances found")
+			} else {
+				return fmt.Sprintf("http://%s/rpc/HFileService", i.Spec())
+			}
+			return ""
+		}
+
+		return f, name, conn
 	}
 
 	if !strings.Contains(s, "/") {
@@ -72,8 +109,10 @@ func hfileUrlAndName(s string) (func() string, string) {
 	if !strings.HasPrefix(s, "http") {
 		s = "http://" + s
 	}
-	return func() string { return s }, name
+	return func() string { return s }, name, nil
 }
+
+var zk = ""
 
 func main() {
 	orig := flag.String("server", "localhost:9999", "URL of hfile server")
@@ -81,6 +120,7 @@ func main() {
 	collection := flag.String("collection", "", "name of collection")
 	graphite := report.Flag()
 	workers := flag.Int("workers", 8, "worker pool size")
+	flag.StringVar(&zk, "zk", "", "zookeeper host")
 	qps := flag.Int("qps", 100, "qps to attempt")
 	sample := flag.Int64("sampleSize", 1000, "number of random keys to use")
 
@@ -91,7 +131,10 @@ func main() {
 		SetAsDefault()
 
 	rttName := "rtt"
-	server, name := hfileUrlAndName(*orig)
+	server, name, conn := hfileUrlAndName(*orig)
+	if conn != nil {
+		defer conn.Close()
+	}
 
 	if collection == nil || len(*collection) < 1 {
 		fmt.Println("--collection is required")
@@ -116,7 +159,10 @@ func main() {
 
 	if rawDiff != nil && len(*rawDiff) > 0 {
 		diffing = true
-		diff, diffName = hfileUrlAndName(*rawDiff)
+		diff, diffName, conn = hfileUrlAndName(*rawDiff)
+		if conn != nil {
+			defer conn.Close()
+		}
 		diffRtt = "rtt." + diffName
 		rttName = "rtt." + name
 	}

@@ -19,8 +19,10 @@ type Load struct {
 	sample     *int64
 	keys       [][]byte
 
-	server string
-	diff   *string // optional
+	server func() string
+
+	diffing bool
+	diff    func() string
 
 	work chan bool
 
@@ -34,8 +36,8 @@ type Load struct {
 	sync.RWMutex
 }
 
-func GetQuiverClient(url string) *gen.HFileServiceClient {
-	recv, send := httpthrift.NewClientProts(url)
+func GetQuiverClient(url func() string) *gen.HFileServiceClient {
+	recv, send := httpthrift.NewDynamicClientProts(url)
 	return gen.NewHFileServiceClientProtocol(nil, recv, send)
 }
 
@@ -54,7 +56,7 @@ func (l *Load) generator(qps int) {
 }
 
 // given a string like testing=fsan44:20202, return (http://fsan44:20202/rpc/HFileService, testing).
-func hfileUrlAndName(s string) (string, string) {
+func hfileUrlAndName(s string) (func() string, string) {
 	name := strings.NewReplacer("http://", "", ".", "_", ":", "_", "/", "_").Replace(s)
 
 	if parts := strings.Split(s, "="); len(parts) > 1 {
@@ -70,7 +72,7 @@ func hfileUrlAndName(s string) (string, string) {
 	if !strings.HasPrefix(s, "http") {
 		s = "http://" + s
 	}
-	return s, name
+	return func() string { return s }, name
 }
 
 func main() {
@@ -107,13 +109,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	diffing := false
 	diffRtt := ""
 	diffName := ""
-	var diff *string
+	diff := func() string { return "" }
 
 	if rawDiff != nil && len(*rawDiff) > 0 {
-		diffServer, diffName := hfileUrlAndName(*rawDiff)
-		diff = &diffServer
+		diffing = true
+		diff, diffName = hfileUrlAndName(*rawDiff)
 		diffRtt = "rtt." + diffName
 		rttName = "rtt." + name
 	}
@@ -122,6 +125,7 @@ func main() {
 		collection: *collection,
 		sample:     sample,
 		server:     server,
+		diffing:    diffing,
 		diff:       diff,
 		work:       make(chan bool, (*qps)*(*workers)),
 		dropped:    r.GetMeter("dropped"),
@@ -134,9 +138,9 @@ func main() {
 		fmt.Println("Failed to fetch testing keys:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("Sending %dqps to %s (%s), drawing from %d random keys...\n", *qps, name, server, len(l.keys))
+	fmt.Printf("Sending %dqps to %s (%s), drawing from %d random keys...\n", *qps, name, server(), len(l.keys))
 	if l.diff != nil {
-		fmt.Printf("Diffing against %s (%s)\n", diffName, *l.diff)
+		fmt.Printf("Diffing against %s (%s)\n", diffName, l.diff())
 	}
 
 	l.startWorkers(*workers)

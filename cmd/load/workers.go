@@ -19,8 +19,8 @@ func (l *Load) startWorkers(count int) {
 		go func() {
 			client := GetQuiverClient(l.server)
 			var diff *gen.HFileServiceClient
-			if l.diff != nil && len(*l.diff) > 0 {
-				diff = GetQuiverClient(*l.diff)
+			if l.diffing {
+				diff = GetQuiverClient(l.diff)
 			}
 			for {
 				<-l.work

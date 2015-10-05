@@ -198,6 +198,6 @@ func main() {
 
 	for {
 		reader.ReadString('\n')
-		PrintSummary(rttName, diffRtt, l.diff != nil)
+		PrintSummary(l)
 	}
 }

@@ -51,7 +51,7 @@ func ConfigsFromCommandline(args []string) []*hfile.CollectionConfig {
 		if details := strings.SplitN(name, "/", 4); len(details) == 4 {
 			parent = details[0]
 			sfunc, total, part = details[1], details[2], details[3]
-			name = fmt.Sprintf("%s/%d", parent, part)
+			name = fmt.Sprintf("%s/%s", parent, part)
 		}
 
 		configs[i] = &hfile.CollectionConfig{

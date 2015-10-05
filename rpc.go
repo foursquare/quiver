@@ -241,10 +241,10 @@ func GetCollectionInfo(r *hfile.Reader, keySampleSize int) (*gen.HFileInfo, erro
 	i.NumElements = &c
 	i.FirstKey, _ = r.FirstKey()
 
-	it := r.GetIterator()
-	defer it.Release()
-
 	if keySampleSize > 0 {
+		it := r.GetIterator()
+		defer it.Release()
+
 		pr := float64(keySampleSize) / float64(c)
 		buf := make([][]byte, keySampleSize)
 		found := 0
@@ -252,13 +252,18 @@ func GetCollectionInfo(r *hfile.Reader, keySampleSize int) (*gen.HFileInfo, erro
 		for next && found < keySampleSize {
 			if rand.Float64() < pr {
 				buf[found] = it.Key()
+				found++
 			}
 			next, err = it.Next()
 			if err != nil {
 				return nil, err
 			}
 		}
+		buf = buf[:found]
 		i.RandomKeys = buf
+	}
+	if Settings.debug {
+		log.Printf("[GetCollectionInfo] %v (%d keys)\n", i, len(i.RandomKeys))
 	}
 	return i, nil
 }

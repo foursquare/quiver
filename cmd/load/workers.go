@@ -13,6 +13,16 @@ import (
 	"github.com/foursquare/quiver/util"
 )
 
+func renderErr(raw error) string {
+	msg := raw.Error()
+	switch e := raw.(type) {
+	case *gen.HFileServiceException:
+		msg = e.GetMessage()
+	default:
+	}
+	return msg
+}
+
 // starts count worker processes, each with their own thttp client(s), watching the work chan.
 func (l *Load) startWorkers(count int) {
 	for i := 0; i < count; i++ {
@@ -55,7 +65,7 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 	before := time.Now()
 	resp, err := client.GetValuesSingle(r)
 	if err != nil {
-		log.Println("[GetValuesSingle] Error fetching value:", err, util.PrettyKeys(keys))
+		log.Println("[GetValuesSingle] Error fetching value:", renderErr(err), util.PrettyKeys(keys))
 	}
 	report.TimeSince(l.rtt+".overall", before)
 	report.TimeSince(l.rtt+".getValuesSingle", before)
@@ -64,7 +74,8 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 		beforeDiff := time.Now()
 		diffResp, diffErr := diff.GetValuesSingle(r)
 		if diffErr != nil {
-			log.Println("[GetValuesSingle] Error fetching diff value:", diffErr, util.PrettyKeys(keys))
+
+			log.Println("[GetValuesSingle] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(keys))
 		}
 		report.TimeSince(l.diffRtt+".overall", beforeDiff)
 		report.TimeSince(l.diffRtt+".getValuesSingle", beforeDiff)
@@ -86,7 +97,7 @@ func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceC
 	before := time.Now()
 	resp, err := client.GetValuesMulti(r)
 	if err != nil {
-		log.Println("[GetValuesMulti] Error fetching value:", err, util.PrettyKeys(keys))
+		log.Println("[GetValuesMulti] Error fetching value:", renderErr(err), util.PrettyKeys(keys))
 	}
 	report.TimeSince(l.rtt+".overall", before)
 	report.TimeSince(l.rtt+".getValuesMulti", before)
@@ -95,7 +106,7 @@ func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceC
 		beforeDiff := time.Now()
 		diffResp, diffErr := diff.GetValuesMulti(r)
 		if diffErr != nil {
-			log.Println("[GetValuesMulti] Error fetching diff value:", diffErr, util.PrettyKeys(keys))
+			log.Println("[GetValuesMulti] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(keys))
 		}
 		report.TimeSince(l.diffRtt+".overall", beforeDiff)
 		report.TimeSince(l.diffRtt+".getValuesMulti", beforeDiff)
@@ -124,7 +135,7 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 	before := time.Now()
 	resp, err := client.GetValuesForPrefixes(r)
 	if err != nil {
-		log.Println("[GetValuesForPrefixes] Error fetching value:", err, util.PrettyKeys(prefixes))
+		log.Println("[GetValuesForPrefixes] Error fetching value:", renderErr(err), util.PrettyKeys(prefixes))
 	}
 	report.TimeSince(l.rtt+".overall", before)
 	report.TimeSince(l.rtt+".GetValuesForPrefixes", before)
@@ -133,7 +144,7 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 		beforeDiff := time.Now()
 		diffResp, diffErr := diff.GetValuesForPrefixes(r)
 		if diffErr != nil {
-			log.Println("[GetValuesForPrefixes] Error fetching diff value:", diffErr, util.PrettyKeys(prefixes))
+			log.Println("[GetValuesForPrefixes] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(prefixes))
 		}
 		report.TimeSince(l.diffRtt+".overall", beforeDiff)
 		report.TimeSince(l.diffRtt+".GetValuesForPrefixes", beforeDiff)
@@ -157,7 +168,7 @@ func (l *Load) sendGetIterator(client *gen.HFileServiceClient, diff *gen.HFileSe
 	before := time.Now()
 	resp, err := client.GetIterator(r)
 	if err != nil {
-		log.Println("[GetIterator] Error fetching value:", err, k)
+		log.Println("[GetIterator] Error fetching value:", renderErr(err), k)
 	}
 	report.TimeSince(l.rtt+".overall", before)
 	report.TimeSince(l.rtt+".GetIterator", before)
@@ -166,7 +177,7 @@ func (l *Load) sendGetIterator(client *gen.HFileServiceClient, diff *gen.HFileSe
 		beforeDiff := time.Now()
 		diffResp, diffErr := diff.GetIterator(r)
 		if diffErr != nil {
-			log.Println("[GetIterator] Error fetching diff value:", diffErr, k)
+			log.Println("[GetIterator] Error fetching diff value:", renderErr(diffErr), k)
 		}
 		report.TimeSince(l.diffRtt+".overall", beforeDiff)
 		report.TimeSince(l.diffRtt+".GetIterator", beforeDiff)

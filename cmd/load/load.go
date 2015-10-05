@@ -185,7 +185,7 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("Sending %dqps to %s (%s), drawing from %d random keys...\n", *qps, name, server(), len(l.keys))
-	if l.diff != nil {
+	if l.diffing {
 		fmt.Printf("Diffing against %s (%s)\n", diffName, l.diff())
 	}
 

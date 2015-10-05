@@ -781,6 +781,8 @@ func (p *MultiHFileKeyResponse) String() string {
 type PrefixRequest struct {
 	HfileName  *string  `thrift:"hfileName,1" json:"hfileName"`
 	SortedKeys [][]byte `thrift:"sortedKeys,2" json:"sortedKeys"`
+	LastKey    []byte   `thrift:"lastKey,3" json:"lastKey"`
+	ValueLimit *int32   `thrift:"valueLimit,4" json:"valueLimit"`
 }
 
 func NewPrefixRequest() *PrefixRequest {
@@ -801,12 +803,35 @@ var PrefixRequest_SortedKeys_DEFAULT [][]byte
 func (p *PrefixRequest) GetSortedKeys() [][]byte {
 	return p.SortedKeys
 }
+
+var PrefixRequest_LastKey_DEFAULT []byte
+
+func (p *PrefixRequest) GetLastKey() []byte {
+	return p.LastKey
+}
+
+var PrefixRequest_ValueLimit_DEFAULT int32
+
+func (p *PrefixRequest) GetValueLimit() int32 {
+	if !p.IsSetValueLimit() {
+		return PrefixRequest_ValueLimit_DEFAULT
+	}
+	return *p.ValueLimit
+}
 func (p *PrefixRequest) IsSetHfileName() bool {
 	return p.HfileName != nil
 }
 
 func (p *PrefixRequest) IsSetSortedKeys() bool {
 	return p.SortedKeys != nil
+}
+
+func (p *PrefixRequest) IsSetLastKey() bool {
+	return p.LastKey != nil
+}
+
+func (p *PrefixRequest) IsSetValueLimit() bool {
+	return p.ValueLimit != nil
 }
 
 func (p *PrefixRequest) Read(iprot thrift.TProtocol) error {
@@ -828,6 +853,14 @@ func (p *PrefixRequest) Read(iprot thrift.TProtocol) error {
 			}
 		case 2:
 			if err := p.ReadField2(iprot); err != nil {
+				return err
+			}
+		case 3:
+			if err := p.ReadField3(iprot); err != nil {
+				return err
+			}
+		case 4:
+			if err := p.ReadField4(iprot); err != nil {
 				return err
 			}
 		default:
@@ -876,6 +909,24 @@ func (p *PrefixRequest) ReadField2(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *PrefixRequest) ReadField3(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadBinary(); err != nil {
+		return fmt.Errorf("error reading field 3: %s", err)
+	} else {
+		p.LastKey = v
+	}
+	return nil
+}
+
+func (p *PrefixRequest) ReadField4(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI32(); err != nil {
+		return fmt.Errorf("error reading field 4: %s", err)
+	} else {
+		p.ValueLimit = &v
+	}
+	return nil
+}
+
 func (p *PrefixRequest) Write(oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin("PrefixRequest"); err != nil {
 		return fmt.Errorf("%T write struct begin error: %s", p, err)
@@ -884,6 +935,12 @@ func (p *PrefixRequest) Write(oprot thrift.TProtocol) error {
 		return err
 	}
 	if err := p.writeField2(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField3(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField4(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -933,6 +990,36 @@ func (p *PrefixRequest) writeField2(oprot thrift.TProtocol) (err error) {
 	return err
 }
 
+func (p *PrefixRequest) writeField3(oprot thrift.TProtocol) (err error) {
+	if p.IsSetLastKey() {
+		if err := oprot.WriteFieldBegin("lastKey", thrift.STRING, 3); err != nil {
+			return fmt.Errorf("%T write field begin error 3:lastKey: %s", p, err)
+		}
+		if err := oprot.WriteBinary(p.LastKey); err != nil {
+			return fmt.Errorf("%T.lastKey (3) field write error: %s", p, err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 3:lastKey: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *PrefixRequest) writeField4(oprot thrift.TProtocol) (err error) {
+	if p.IsSetValueLimit() {
+		if err := oprot.WriteFieldBegin("valueLimit", thrift.I32, 4); err != nil {
+			return fmt.Errorf("%T write field begin error 4:valueLimit: %s", p, err)
+		}
+		if err := oprot.WriteI32(int32(*p.ValueLimit)); err != nil {
+			return fmt.Errorf("%T.valueLimit (4) field write error: %s", p, err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 4:valueLimit: %s", p, err)
+		}
+	}
+	return err
+}
+
 func (p *PrefixRequest) String() string {
 	if p == nil {
 		return "<nil>"
@@ -941,7 +1028,8 @@ func (p *PrefixRequest) String() string {
 }
 
 type PrefixResponse struct {
-	Values map[string][][]byte `thrift:"values,1" json:"values"`
+	Values  map[string][][]byte `thrift:"values,1" json:"values"`
+	LastKey []byte              `thrift:"lastKey,2" json:"lastKey"`
 }
 
 func NewPrefixResponse() *PrefixResponse {
@@ -953,8 +1041,18 @@ var PrefixResponse_Values_DEFAULT map[string][][]byte
 func (p *PrefixResponse) GetValues() map[string][][]byte {
 	return p.Values
 }
+
+var PrefixResponse_LastKey_DEFAULT []byte
+
+func (p *PrefixResponse) GetLastKey() []byte {
+	return p.LastKey
+}
 func (p *PrefixResponse) IsSetValues() bool {
 	return p.Values != nil
+}
+
+func (p *PrefixResponse) IsSetLastKey() bool {
+	return p.LastKey != nil
 }
 
 func (p *PrefixResponse) Read(iprot thrift.TProtocol) error {
@@ -972,6 +1070,10 @@ func (p *PrefixResponse) Read(iprot thrift.TProtocol) error {
 		switch fieldId {
 		case 1:
 			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.ReadField2(iprot); err != nil {
 				return err
 			}
 		default:
@@ -1029,11 +1131,23 @@ func (p *PrefixResponse) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *PrefixResponse) ReadField2(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadBinary(); err != nil {
+		return fmt.Errorf("error reading field 2: %s", err)
+	} else {
+		p.LastKey = v
+	}
+	return nil
+}
+
 func (p *PrefixResponse) Write(oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin("PrefixResponse"); err != nil {
 		return fmt.Errorf("%T write struct begin error: %s", p, err)
 	}
 	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -1074,6 +1188,21 @@ func (p *PrefixResponse) writeField1(oprot thrift.TProtocol) (err error) {
 		}
 		if err := oprot.WriteFieldEnd(); err != nil {
 			return fmt.Errorf("%T write field end error 1:values: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *PrefixResponse) writeField2(oprot thrift.TProtocol) (err error) {
+	if p.IsSetLastKey() {
+		if err := oprot.WriteFieldBegin("lastKey", thrift.STRING, 2); err != nil {
+			return fmt.Errorf("%T write field begin error 2:lastKey: %s", p, err)
+		}
+		if err := oprot.WriteBinary(p.LastKey); err != nil {
+			return fmt.Errorf("%T.lastKey (2) field write error: %s", p, err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 2:lastKey: %s", p, err)
 		}
 	}
 	return err

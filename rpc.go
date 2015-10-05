@@ -107,7 +107,11 @@ func (cs *ThriftRpcImpl) GetValuesForPrefixes(req *gen.PrefixRequest) (r *gen.Pr
 	} else {
 		i := reader.GetIterator()
 		defer i.Release()
-		if res.Values, err = i.AllForPrefixes(req.SortedKeys); err != nil {
+		limit := int32(0)
+		if req.ValueLimit != nil {
+			limit = *req.ValueLimit
+		}
+		if res.Values, err = i.AllForPrefixes(req.SortedKeys, limit, req.LastKey); err != nil {
 			return nil, err
 		} else {
 			return res, nil

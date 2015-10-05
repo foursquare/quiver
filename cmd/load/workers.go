@@ -36,8 +36,8 @@ func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceCli
 	switch {
 	case i < 15:
 		l.sendGetIterator(client, diff)
-	// case i < 30:
-	//  l.sendPrefixes(client, diff)
+	case i < 30:
+		l.sendPrefixes(client, diff)
 	case i < 50:
 		l.sendMulti(client, diff)
 	default:
@@ -115,10 +115,11 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 	prefixes := make([][]byte, len(fullKeys))
 
 	for i, v := range fullKeys {
-		prefixes[i] = v[:len(v)-2]
+		prefixes[i] = v[:len(v)/2]
 	}
 	sort.Sort(util.Keys(prefixes))
-	r := &gen.PrefixRequest{HfileName: &l.collection, SortedKeys: prefixes}
+	limit := int32(10) // request a max of 10 k/v pairs
+	r := &gen.PrefixRequest{HfileName: &l.collection, SortedKeys: prefixes, ValueLimit: &limit}
 
 	before := time.Now()
 	resp, err := client.GetValuesForPrefixes(r)

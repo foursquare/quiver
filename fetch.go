@@ -46,9 +46,12 @@ func ConfigsFromCommandline(args []string) []*hfile.CollectionConfig {
 
 		name, sfunc, total, part := nameAndPath[0], "_", "1", "0"
 
+		parent := name
+
 		if details := strings.SplitN(name, "/", 4); len(details) == 4 {
-			name = details[0]
-			name, sfunc, total, part = details[0], details[1], details[2], details[3]
+			parent = details[0]
+			sfunc, total, part = details[1], details[2], details[3]
+			name = fmt.Sprintf("%s/%d", parent, part)
 		}
 
 		configs[i] = &hfile.CollectionConfig{
@@ -57,7 +60,7 @@ func ConfigsFromCommandline(args []string) []*hfile.CollectionConfig {
 			LocalPath:       nameAndPath[1],
 			InMem:           Settings.mlock,
 			Debug:           Settings.debug,
-			ParentName:      name,
+			ParentName:      parent,
 			ShardFunction:   sfunc,
 			Partition:       part,
 			TotalPartitions: total,

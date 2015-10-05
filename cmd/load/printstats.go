@@ -9,15 +9,15 @@ import (
 	"github.com/dt/go-metrics-reporting"
 )
 
-func PrintSummary(rttName, diffRtt string, isDiffing bool) {
+func PrintSummary(l *Load) {
 	du := float64(time.Millisecond)
-	overall := report.GetDefault().Get(rttName + ".overall").(metrics.Timer)
+	overall := report.GetDefault().Get(l.rtt + ".overall").(metrics.Timer)
 
-	if isDiffing {
-		diffOverall := report.GetDefault().Get(diffRtt + ".overall").(metrics.Timer)
+	if l.diffing {
+		diffOverall := report.GetDefault().Get(l.diffRtt + ".overall").(metrics.Timer)
 		useful := []float64{0.50, 0.90, 0.99}
 		ps, psDiff := overall.Percentiles(useful), diffOverall.Percentiles(useful)
-		fmt.Printf("%10s\t\t%10s\n", rttName, diffRtt)
+		fmt.Printf("%10s\t\t%10s\n", l.rtt, l.diffRtt)
 		fmt.Printf("\tp99 %6.2fms\t%6.2fms\t(%6.2fms)\n", ps[2]/du, psDiff[2]/du, (ps[2]-psDiff[2])/du)
 		fmt.Printf("\tp90 %6.2fms\t%6.2fms\t(%6.2fms)\n", ps[1]/du, psDiff[1]/du, (ps[1]-psDiff[1])/du)
 		fmt.Printf("\tp50 %6.2fms\t%6.2fms\t(%6.2fms)\n", ps[0]/du, psDiff[0]/du, (ps[0]-psDiff[0])/du)
@@ -32,7 +32,7 @@ func PrintSummary(rttName, diffRtt string, isDiffing bool) {
 			}
 		})
 	} else {
-		fmt.Printf("%s\t(%6.2fqps)\tp99 %6.2fms\n", rttName, overall.Rate1(), overall.Percentile(0.99)/du)
+		fmt.Printf("%s\t(%6.2fqps)\tp99 %6.2fms\n", l.rtt, overall.Rate1(), overall.Percentile(0.99)/du)
 	}
 	queue := report.GetDefault().Get("queue").(metrics.Gauge).Value()
 	dropped := report.GetDefault().Get("dropped").(metrics.Meter)

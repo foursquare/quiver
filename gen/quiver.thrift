@@ -38,10 +38,13 @@ struct MultiHFileKeyResponse {
 struct PrefixRequest {
   1: optional string hfileName
   2: optional list<binary> sortedKeys
+  3: optional binary lastKey
+  4: optional i32 valueLimit
 }
 
 struct PrefixResponse {
   1: optional map<binary, list<binary>> values
+  2: optional binary lastKey
 }
 
 struct MultiHFileSplitKeyRequest {

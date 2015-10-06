@@ -10,6 +10,7 @@ import (
 )
 
 func PrintSummary(l *Load) {
+	fmt.Println(string([]byte{27}) + "[2J")
 	du := float64(time.Millisecond)
 	overall := report.GetDefault().Get(l.rtt + ".overall").(metrics.Timer)
 
@@ -25,16 +26,16 @@ func PrintSummary(l *Load) {
 			if strings.HasPrefix(stat, "diffs.") {
 				switch m := i.(type) {
 				case metrics.Meter:
-					fmt.Printf("%s %d (%d total)\n", m.Rate1(), m.Count())
+					fmt.Printf("%s %4.2f/s (%d total)\n", stat, m.Rate1(), m.Count())
 				default:
-					fmt.Printf("%s %T %v\n", m, m)
+					fmt.Printf("%s %T %v\n", stat, m, m)
 				}
 			}
 		})
 	} else {
-		fmt.Printf("%s\t(%6.2fqps)\tp99 %6.2fms\n", l.rtt, overall.Rate1(), overall.Percentile(0.99)/du)
+		fmt.Printf("%s\tp99 %6.2fms\n", l.rtt, overall.Percentile(0.99)/du)
 	}
 	queue := report.GetDefault().Get("queue").(metrics.Gauge).Value()
 	dropped := report.GetDefault().Get("dropped").(metrics.Meter)
-	fmt.Printf("queue %d (dropped: %.2f)\n", queue, dropped.Rate1())
+	fmt.Printf("%4.2f qps. queue %d (dropped: %.2f).\n", overall.Rate1(), queue, dropped.Rate1())
 }

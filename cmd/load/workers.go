@@ -171,7 +171,7 @@ func (l *Load) sendGetIterator(client *gen.HFileServiceClient, diff *gen.HFileSe
 		log.Println("[GetIterator] Error fetching value:", renderErr(err), k)
 	}
 	report.TimeSince(l.rtt+".overall", before)
-	report.TimeSince(l.rtt+".GetIterator", before)
+	report.TimeSince(l.rtt+".getIterator", before)
 
 	if diff != nil {
 		beforeDiff := time.Now()

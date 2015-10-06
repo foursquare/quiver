@@ -10,6 +10,10 @@ import (
 	"github.com/dt/go-metrics-reporting"
 )
 
+func PrintDiffTimingLine(name string, x, y, du float64) {
+	fmt.Printf("\t%s:\t%6.2fms\t%6.2fms\t%+.2fms\t%+.2f%%\n", name, x/du, y/du, (y-x)/du, (y-x)/x*100)
+}
+
 func (l *Load) PrintTiming(suffix string, du float64) {
 	useful := []float64{0.50, 0.90, 0.99}
 
@@ -30,9 +34,9 @@ func (l *Load) PrintTiming(suffix string, du float64) {
 		qps := orig.(metrics.Timer).Rate1()
 
 		fmt.Printf("%s (%.1fqps)\n\t\t%-15s\t%-15s\n", suffix[1:], qps, l.rtt[4:], l.diffRtt[4:])
-		fmt.Printf("\tp99:\t%6.2fms\t%6.2fms\t(%6.2fms)\n", ps[2]/du, psDiff[2]/du, (ps[2]-psDiff[2])/du)
-		fmt.Printf("\tp90:\t%6.2fms\t%6.2fms\t(%6.2fms)\n", ps[1]/du, psDiff[1]/du, (ps[1]-psDiff[1])/du)
-		fmt.Printf("\tp50:\t%6.2fms\t%6.2fms\t(%6.2fms)\n", ps[0]/du, psDiff[0]/du, (ps[0]-psDiff[0])/du)
+		PrintDiffTimingLine("p99", ps[2], psDiff[2], du)
+		PrintDiffTimingLine("p90", ps[1], psDiff[1], du)
+		PrintDiffTimingLine("p50", ps[0], psDiff[0], du)
 		fmt.Println()
 	} else {
 		fmt.Printf("%s\tp99\t%6.2fms\tp50 %6.2f\n", l.rtt, ps[2]/du, ps[0]/du)

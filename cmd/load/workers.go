@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"log"
 	"math"
 	"math/rand"
@@ -138,7 +139,7 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 		log.Println("[GetValuesForPrefixes] Error fetching value:", renderErr(err), util.PrettyKeys(prefixes))
 	}
 	report.TimeSince(l.rtt+".overall", before)
-	report.TimeSince(l.rtt+".GetValuesForPrefixes", before)
+	report.TimeSince(l.rtt+".getValuesForPrefixes", before)
 
 	if diff != nil {
 		beforeDiff := time.Now()
@@ -147,12 +148,40 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 			log.Println("[GetValuesForPrefixes] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(prefixes))
 		}
 		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".GetValuesForPrefixes", beforeDiff)
+		report.TimeSince(l.diffRtt+".getValuesForPrefixes", beforeDiff)
 
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
 			report.Inc("diffs")
-			report.Inc("diffs.GetValuesForPrefixes")
-			log.Printf("[DIFF-GetValuesForPrefixes] req: %v\n \torig: %v\n\n\tdiff: %v\n", r, resp, diffResp)
+			report.Inc("diffs.getValuesForPrefixes")
+			if resp != nil && diffResp != nil {
+				log.Printf("[DIFF-GetValuesForPrefixes] req: %v\n", r)
+
+				log.Printf("[DIFF-GetValuesForPrefixes] orig len: %d\n", len(resp.GetValues()))
+				log.Printf("[DIFF-GetValuesForPrefixes] diff len: %d\n", len(diffResp.GetValues()))
+
+				log.Printf("[DIFF-GetValuesForPrefixes] orig lastKey: %s\n", hex.EncodeToString(resp.GetLastKey()))
+				log.Printf("[DIFF-GetValuesForPrefixes] diff lastKey: %s\n", hex.EncodeToString(diffResp.GetLastKey()))
+
+				a := resp.GetValues()
+				b := diffResp.GetValues()
+				for k, values := range a {
+					if other, ok := b[k]; !ok {
+						log.Printf("[DIFF-GetValuesForPrefixes] Missing from diff: %s", hex.EncodeToString([]byte(k)))
+					} else if !reflect.DeepEqual(values, other) {
+						log.Printf("[DIFF-GetValuesForPrefixes] Different values for: %s", hex.EncodeToString([]byte(k)))
+						log.Printf("[DIFF-GetValuesForPrefixes] orig (%d): %s", len(values), util.PrettyKeys(values))
+						log.Printf("[DIFF-GetValuesForPrefixes] diff (%d): %s", len(other), util.PrettyKeys(other))
+					}
+				}
+				for k, _ := range b {
+					if _, ok := a[k]; !ok {
+						log.Printf("[DIFF-GetValuesForPrefixes] Missing from orig: %s", hex.EncodeToString([]byte(k)))
+					}
+				}
+				log.Println("\n")
+			} else {
+				log.Printf("[DIFF-GetValuesForPrefixes] req: %v\n \torig: %v\n\n\tdiff: %v\n", r, resp, diffResp)
+			}
 		}
 	}
 }

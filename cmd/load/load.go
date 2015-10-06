@@ -207,6 +207,6 @@ func main() {
 
 	for {
 		reader.ReadString('\n')
-		PrintSummary(l)
+		l.PrintSummary()
 	}
 }

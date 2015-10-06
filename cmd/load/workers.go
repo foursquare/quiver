@@ -180,7 +180,7 @@ func (l *Load) sendGetIterator(client *gen.HFileServiceClient, diff *gen.HFileSe
 			log.Println("[GetIterator] Error fetching diff value:", renderErr(diffErr), k)
 		}
 		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".GetIterator", beforeDiff)
+		report.TimeSince(l.diffRtt+".getIterator", beforeDiff)
 
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
 			report.Inc("diffs")

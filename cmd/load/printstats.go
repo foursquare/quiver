@@ -10,8 +10,17 @@ import (
 	"github.com/dt/go-metrics-reporting"
 )
 
+const CLR_0 = "\x1b[0m"
+const CLR_R = "\x1b[31;1m"
+const CLR_G = "\x1b[32;1m"
+
 func PrintDiffTimingLine(name string, x, y, du float64) {
-	fmt.Printf("\t%s:\t%6.2fms\t%6.2fms\t%+.2fms\t%+.2f%%\n", name, x/du, y/du, (y-x)/du, (y-x)/x*100)
+	c := CLR_G
+	if y > x {
+		c = CLR_R
+	}
+
+	fmt.Printf("\t%s:\t%6.2fms\t%6.2fms\t%s%+.2fms\t%+.2f%%%s\n", name, x/du, y/du, c, (y-x)/du, (y-x)/x*100, CLR_0)
 }
 
 func (l *Load) PrintTiming(suffix string, du float64) {

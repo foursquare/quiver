@@ -202,10 +202,10 @@ func main() {
 	go l.startKeyFetcher(time.Minute)
 	go l.generator(*qps)
 
-	fmt.Print("Press enter for stats summary.\n")
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
+		fmt.Print("Press enter for stats summary.\n")
 		reader.ReadString('\n')
 		l.PrintSummary()
 	}

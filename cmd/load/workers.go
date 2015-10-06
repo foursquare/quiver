@@ -44,11 +44,11 @@ func (l *Load) startWorkers(count int) {
 func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
 	i := rand.Int31n(100)
 	switch {
-	case i < 15:
-		l.sendGetIterator(client, diff)
-	case i < 30:
+	case i < l.mixPrefix:
 		l.sendPrefixes(client, diff)
-	case i < 50:
+	case i < l.mixIterator:
+		l.sendGetIterator(client, diff)
+	case i < l.mixMulti:
 		l.sendMulti(client, diff)
 	default:
 		l.sendSingle(client, diff)

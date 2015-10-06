@@ -34,6 +34,8 @@ type Load struct {
 	queueSize report.Guage
 	dropped   report.Meter
 
+	mixPrefix, mixIterator, mixMulti int32
+
 	// for atomic keyset swaps in setKeys.
 	sync.RWMutex
 }
@@ -124,6 +126,10 @@ func main() {
 	qps := flag.Int("qps", 100, "qps to attempt")
 	sample := flag.Int64("sampleSize", 1000, "number of random keys to use")
 
+	mixPrefix := flag.Int("mix-prefix", 10, "getPrefixes traffic mix % (un-alloc is getSingle)")
+	mixIter := flag.Int("mix-iterator", 10, "getPrefixes traffic mix % (un-alloc is getSingle)")
+	mixMulti := flag.Int("mix-multi", 20, "getPrefixes traffic mix % (un-alloc is getSingle)")
+
 	flag.Parse()
 
 	r := report.NewRecorder().
@@ -168,16 +174,19 @@ func main() {
 	}
 
 	l := &Load{
-		collection: *collection,
-		sample:     sample,
-		server:     server,
-		diffing:    diffing,
-		diff:       diff,
-		work:       make(chan bool, (*qps)*(*workers)),
-		dropped:    r.GetMeter("dropped"),
-		queueSize:  r.GetGuage("queue"),
-		rtt:        rttName,
-		diffRtt:    diffRtt,
+		collection:  *collection,
+		sample:      sample,
+		server:      server,
+		diffing:     diffing,
+		diff:        diff,
+		work:        make(chan bool, (*qps)*(*workers)),
+		dropped:     r.GetMeter("dropped"),
+		queueSize:   r.GetGuage("queue"),
+		rtt:         rttName,
+		diffRtt:     diffRtt,
+		mixPrefix:   int32(*mixPrefix),
+		mixIterator: int32(*mixPrefix + *mixIter),
+		mixMulti:    int32(*mixPrefix + *mixIter + *mixMulti),
 	}
 
 	if err := l.setKeys(); err != nil {

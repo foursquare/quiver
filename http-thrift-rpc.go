@@ -61,10 +61,24 @@ func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 		in.ReadFrom(req.Body)
 		defer req.Body.Close()
 
-		iprot := thrift.NewTBinaryProtocol(in, true, true)
+		compact := false
+
+		if in.Len() > 0 && in.Bytes()[0] == thrift.COMPACT_PROTOCOL_ID {
+			compact = true
+		}
 
 		outbuf := thrift.NewTMemoryBuffer()
-		oprot := thrift.NewTBinaryProtocol(outbuf, true, true)
+
+		var iprot thrift.TProtocol
+		var oprot thrift.TProtocol
+
+		if compact {
+			iprot = thrift.NewTCompactProtocol(in)
+			oprot = thrift.NewTCompactProtocol(outbuf)
+		} else {
+			iprot = thrift.NewTBinaryProtocol(in, true, true)
+			oprot = thrift.NewTBinaryProtocol(outbuf, true, true)
+		}
 
 		ok, err := h.Process(iprot, oprot)
 

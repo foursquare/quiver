@@ -45,7 +45,7 @@ func TestGetValuesSingle(t *testing.T) {
 
 }
 
-func BenchmarkUncompressed(b *testing.B) {
+func BenchmarkHandlerUncompressed(b *testing.B) {
 	b.StopTimer()
 	Setup(b)
 	reqs := GetRandomTestReqs("uncompressed", b.N, 5, maxKey)
@@ -58,7 +58,7 @@ func BenchmarkUncompressed(b *testing.B) {
 	}
 }
 
-func BenchmarkCompressed(b *testing.B) {
+func BenchmarkHandlerCompressed(b *testing.B) {
 	b.StopTimer()
 	Setup(b)
 	reqs := GetRandomTestReqs("compressed", b.N, 5, maxKey)

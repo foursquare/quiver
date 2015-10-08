@@ -6,36 +6,11 @@ import (
 	"testing"
 
 	"github.com/foursquare/gohfile"
-	"github.com/foursquare/quiver/gen"
-	"github.com/foursquare/quiver/testdata"
 )
-
-var uncompressed gen.HFileService
-var compressed gen.HFileService
-var maxKey int
-
-func Setup(t interface {
-	Fatal(args ...interface{})
-}) {
-	maxKey = 5000000
-	if uncompressed != nil && compressed != nil {
-		return
-	}
-	if cs, err := hfile.TestdataCollectionSet("uncompressed", maxKey, false, true); err != nil {
-		t.Fatal(err)
-	} else {
-		uncompressed = &ThriftRpcImpl{cs}
-	}
-	if cs, err := hfile.TestdataCollectionSet("compressed", maxKey, true, true); err != nil {
-		t.Fatal(err)
-	} else {
-		compressed = &ThriftRpcImpl{cs}
-	}
-}
 
 func TestGetValuesSingle(t *testing.T) {
 	Setup(t)
-	reqs := testdata.GetRandomTestReqs("compressed", 10, 5, maxKey)
+	reqs := GetRandomTestReqs("compressed", 10, 5, maxKey)
 
 	for _, req := range reqs {
 		if r, err := compressed.GetValuesSingle(req); err != nil {
@@ -56,7 +31,7 @@ func TestGetValuesSingle(t *testing.T) {
 	}
 
 	dupes := []int{1, 2, 3, 3, 3, 4}
-	req := testdata.GetTestIntReq("compressed", dupes)
+	req := GetTestIntReq("compressed", dupes)
 	if r, err := compressed.GetValuesSingle(req); err != nil {
 		t.Fatal("error: ", err)
 	} else {
@@ -73,7 +48,7 @@ func TestGetValuesSingle(t *testing.T) {
 func BenchmarkUncompressed(b *testing.B) {
 	b.StopTimer()
 	Setup(b)
-	reqs := testdata.GetRandomTestReqs("uncompressed", b.N, 5, maxKey)
+	reqs := GetRandomTestReqs("uncompressed", b.N, 5, maxKey)
 	b.StartTimer()
 
 	for _, req := range reqs {
@@ -86,7 +61,7 @@ func BenchmarkUncompressed(b *testing.B) {
 func BenchmarkCompressed(b *testing.B) {
 	b.StopTimer()
 	Setup(b)
-	reqs := testdata.GetRandomTestReqs("compressed", b.N, 5, maxKey)
+	reqs := GetRandomTestReqs("compressed", b.N, 5, maxKey)
 	b.StartTimer()
 
 	for _, req := range reqs {

@@ -1,4 +1,4 @@
-package testdata
+package main
 
 import (
 	"math/rand"
@@ -7,6 +7,32 @@ import (
 	"github.com/foursquare/gohfile"
 	"github.com/foursquare/quiver/gen"
 )
+
+var uncompressed gen.HFileService
+var compressed gen.HFileService
+var maxKey int
+
+type hasFatal interface {
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
+}
+
+func Setup(t hasFatal) {
+	maxKey = 5000000
+	if uncompressed != nil && compressed != nil {
+		return
+	}
+	if cs, err := hfile.TestdataCollectionSet("uncompressed", maxKey, false, true); err != nil {
+		t.Fatal(err)
+	} else {
+		uncompressed = &ThriftRpcImpl{cs}
+	}
+	if cs, err := hfile.TestdataCollectionSet("compressed", maxKey, true, true); err != nil {
+		t.Fatal(err)
+	} else {
+		compressed = &ThriftRpcImpl{cs}
+	}
+}
 
 func GetTestIntReq(name string, keys []int) *gen.SingleHFileKeyRequest {
 	keyBytes := make([][]byte, len(keys))

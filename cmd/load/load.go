@@ -41,7 +41,7 @@ type Load struct {
 }
 
 func GetQuiverClient(url func() string) *gen.HFileServiceClient {
-	recv, send := httpthrift.NewDynamicClientProts(url)
+	recv, send := httpthrift.NewDynamicClientProts(url, false)
 	return gen.NewHFileServiceClientProtocol(nil, recv, send)
 }
 

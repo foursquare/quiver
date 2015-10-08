@@ -33,7 +33,7 @@ func main() {
 		url = "http://" + url
 	}
 
-	recv, send := httpthrift.NewClientProts(url)
+	recv, send := httpthrift.NewClientProts(url, false)
 	client := gen.NewHFileServiceClientProtocol(nil, recv, send)
 
 	r := &gen.InfoRequest{nil, nil}

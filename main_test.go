@@ -10,7 +10,7 @@ import (
 
 func DummyClient(t hasFatal, size int) (*gen.HFileServiceClient, *httptest.Server) {
 	ts := httptest.NewServer(NewHttpRpcHandler(compressed.(*ThriftRpcImpl).CollectionSet, nil))
-	recv, send := httpthrift.NewClientProts(ts.URL)
+	recv, send := httpthrift.NewClientProts(ts.URL, false)
 	return gen.NewHFileServiceClientProtocol(nil, recv, send), ts
 }
 

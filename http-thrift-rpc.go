@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -11,13 +12,14 @@ import (
 )
 
 type HttpRpcHandler struct {
-	stats *report.Recorder
+	stats   *report.Recorder
+	buffers sync.Pool
 	*gen.HFileServiceProcessor
 }
 
 func NewHttpRpcHandler(cs *hfile.CollectionSet, stats *report.Recorder) *HttpRpcHandler {
 	impl := gen.NewHFileServiceProcessor(&ThriftRpcImpl{cs})
-	return &HttpRpcHandler{stats, impl}
+	return &HttpRpcHandler{stats, sync.Pool{}, impl}
 }
 
 // borrowed from generated thrift code, but with instrumentation added.
@@ -48,15 +50,21 @@ func (p *HttpRpcHandler) Process(iprot, oprot thrift.TProtocol) (success bool, e
 	return false, e
 }
 
+func (h *HttpRpcHandler) getBuf() *thrift.TMemoryBuffer {
+	res := h.buffers.Get()
+	if res == nil {
+		return thrift.NewTMemoryBuffer()
+	} else {
+		out := res.(*thrift.TMemoryBuffer)
+		out.Reset()
+		return out
+	}
+}
+
 func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 	if req.Method == "POST" {
-		var in *thrift.TMemoryBuffer
-		size := int(req.ContentLength)
-		if size > 0 {
-			in = thrift.NewTMemoryBufferLen(size)
-		} else {
-			in = thrift.NewTMemoryBuffer()
-		}
+		in := h.getBuf()
+		defer h.buffers.Put(in)
 
 		in.ReadFrom(req.Body)
 		defer req.Body.Close()
@@ -67,7 +75,8 @@ func (h *HttpRpcHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 			compact = true
 		}
 
-		outbuf := thrift.NewTMemoryBuffer()
+		outbuf := h.getBuf()
+		defer h.buffers.Put(outbuf)
 
 		var iprot thrift.TProtocol
 		var oprot thrift.TProtocol

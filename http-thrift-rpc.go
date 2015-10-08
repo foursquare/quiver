@@ -11,12 +11,13 @@ import (
 )
 
 type HttpRpcHandler struct {
+	stats *report.Recorder
 	*gen.HFileServiceProcessor
 }
 
-func NewHttpRpcHandler(cs *hfile.CollectionSet) *HttpRpcHandler {
+func NewHttpRpcHandler(cs *hfile.CollectionSet, stats *report.Recorder) *HttpRpcHandler {
 	impl := gen.NewHFileServiceProcessor(&ThriftRpcImpl{cs})
-	return &HttpRpcHandler{impl}
+	return &HttpRpcHandler{stats, impl}
 }
 
 // borrowed from generated thrift code, but with instrumentation added.
@@ -29,7 +30,9 @@ func (p *HttpRpcHandler) Process(iprot, oprot thrift.TProtocol) (success bool, e
 	if processor, ok := p.GetProcessorFunction(name); ok {
 		start := time.Now()
 		success, err = processor.Process(seqId, iprot, oprot)
-		report.TimeSince(name, start)
+		if p.stats != nil {
+			p.stats.TimeSince(name, start)
+		}
 		return
 	}
 

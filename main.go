@@ -68,7 +68,7 @@ func main() {
 	graphite := report.Flag()
 	args := readSettings()
 
-	report.NewRecorder().
+	stats := report.NewRecorder().
 		EnableGCInfoCollection().
 		MaybeReportTo(graphite).
 		SetAsDefault()
@@ -96,7 +96,7 @@ func main() {
 
 	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)
 
-	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs))
+	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs, stats))
 	http.Handle("/", &DebugHandler{cs})
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", Settings.port), nil))

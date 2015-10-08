@@ -8,16 +8,21 @@ import (
 	"github.com/foursquare/quiver/gen"
 )
 
-func DummyClient(t hasFatal, size int, compact bool) (*gen.HFileServiceClient, *httptest.Server) {
-	ts := httptest.NewServer(NewHttpRpcHandler(compressed.(*ThriftRpcImpl).CollectionSet, nil))
-	recv, send := httpthrift.NewClientProts(ts.URL, compact)
-	return gen.NewHFileServiceClientProtocol(nil, recv, send), ts
+func DummyServer(t hasFatal) *httptest.Server {
+	Setup(t)
+	return httptest.NewServer(NewHttpRpcHandler(compressed.(*ThriftRpcImpl).CollectionSet, nil))
+}
+
+func DummyClient(url string, compact bool) *gen.HFileServiceClient {
+	recv, send := httpthrift.NewClientProts(url, compact)
+	return gen.NewHFileServiceClientProtocol(nil, recv, send)
 }
 
 func TestRoundTrip(t *testing.T) {
 	Setup(t)
-	client, srv := DummyClient(t, 50000, false)
+	srv := DummyServer(t)
 	defer srv.Close()
+	client := DummyClient(srv.URL, false)
 	reqs := GetRandomTestReqs("compressed", 100, 5, 50000)
 
 	for _, req := range reqs {
@@ -31,9 +36,9 @@ func TestRoundTrip(t *testing.T) {
 
 func BenchmarkServer(b *testing.B) {
 	b.StopTimer()
-	Setup(b)
-	client, srv := DummyClient(b, 50000, false)
+	srv := DummyServer(b)
 	defer srv.Close()
+	client := DummyClient(srv.URL, false)
 	reqs := GetRandomTestReqs("compressed", b.N, 5, 50000)
 	b.StartTimer()
 
@@ -51,8 +56,9 @@ func BenchmarkServer(b *testing.B) {
 // The same as above except we flip the `compact` flag in the client.
 func TestRoundTripTCompact(t *testing.T) {
 	Setup(t)
-	client, srv := DummyClient(t, 50000, true)
+	srv := DummyServer(t)
 	defer srv.Close()
+	client := DummyClient(srv.URL, true)
 	reqs := GetRandomTestReqs("compressed", 100, 5, 50000)
 
 	for _, req := range reqs {
@@ -67,9 +73,9 @@ func TestRoundTripTCompact(t *testing.T) {
 // The same as above except we flip the `compact` flag in the client.
 func BenchmarkTCompact(b *testing.B) {
 	b.StopTimer()
-	Setup(b)
-	client, srv := DummyClient(b, 50000, true)
+	srv := DummyServer(b)
 	defer srv.Close()
+	client := DummyClient(srv.URL, true)
 	reqs := GetRandomTestReqs("compressed", b.N, 5, 50000)
 	b.StartTimer()
 

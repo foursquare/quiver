@@ -6,6 +6,7 @@ import (
 
 	"github.com/foursquare/gohfile"
 	"github.com/foursquare/quiver/gen"
+	"github.com/stretchr/testify/assert"
 )
 
 var uncompressed gen.HFileService
@@ -15,6 +16,7 @@ var maxKey int
 type hasFatal interface {
 	Fatal(args ...interface{})
 	Fatalf(format string, args ...interface{})
+	assert.TestingT
 }
 
 func Setup(t hasFatal) {
@@ -62,4 +64,13 @@ func GetRandomTestReqs(name string, count, reqSize, max int) []*gen.SingleHFileK
 		reqs[i] = GetTestIntReq(name, MakeTestKeyIntList(r, reqSize, max))
 	}
 	return reqs
+}
+
+func CheckReqAndRes(t assert.TestingT, req *gen.SingleHFileKeyRequest, res *gen.SingleHFileKeyResponse) {
+	for i, k := range req.GetSortedKeys() {
+		expected := hfile.MockValueForMockKey(k)
+		actual, ok := res.Values[int32(i)]
+		assert.True(t, ok)
+		assert.Equal(t, actual, expected)
+	}
 }

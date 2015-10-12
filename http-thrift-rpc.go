@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/dt/go-metrics-reporting"
 	"github.com/dt/httpthrift"
-	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/hfile"
 	"github.com/foursquare/quiver/gen"
 )
 

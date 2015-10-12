@@ -8,7 +8,7 @@ import (
 
 	"github.com/dt/curator.go"
 	"github.com/dt/go-curator-discovery"
-	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/hfile"
 )
 
 type Registrations struct {

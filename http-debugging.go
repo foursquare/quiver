@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/hfile"
 )
 
 type DebugHandler struct {

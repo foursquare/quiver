@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/hfile"
 	"github.com/foursquare/quiver/gen"
 	"github.com/foursquare/quiver/util"
 )

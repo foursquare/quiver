@@ -11,9 +11,9 @@ import (
 	"github.com/foursquare/quiver/gen"
 )
 
-func DummyServer(t hasFatal) *httptest.Server {
+func DummyServer(t hasFatal, handler *ThriftRpcImpl) *httptest.Server {
 	Setup(t)
-	return httptest.NewServer(NewHttpRpcHandler(compressed.(*ThriftRpcImpl).CollectionSet, nil))
+	return httptest.NewServer(NewHttpRpcHandler(handler.CollectionSet, nil))
 }
 
 func DummyClient(url string, compact bool) *gen.HFileServiceClient {
@@ -23,7 +23,7 @@ func DummyClient(url string, compact bool) *gen.HFileServiceClient {
 
 func TestRoundTrip(t *testing.T) {
 	Setup(t)
-	srv := DummyServer(t)
+	srv := DummyServer(t, compressed)
 	defer srv.Close()
 	client := DummyClient(srv.URL, false)
 	reqs := GetRandomTestReqs("compressed", 100, 5, 50000)
@@ -40,7 +40,7 @@ func TestRoundTrip(t *testing.T) {
 // The same as above except we flip the `compact` flag in the client.
 func TestRoundTripTCompact(t *testing.T) {
 	Setup(t)
-	srv := DummyServer(t)
+	srv := DummyServer(t, compressed)
 	defer srv.Close()
 	client := DummyClient(srv.URL, true)
 	reqs := GetRandomTestReqs("compressed", 100, 5, 50000)
@@ -73,7 +73,7 @@ func dummyWorker(t hasFatal, client *gen.HFileServiceClient, work chan *gen.Sing
 }
 
 func TestConcurrentRoundTrip(t *testing.T) {
-	srv := DummyServer(t)
+	srv := DummyServer(t, compressed)
 	defer srv.Close()
 	time.Sleep(time.Millisecond * 10)
 
@@ -98,7 +98,7 @@ func TestConcurrentRoundTrip(t *testing.T) {
 
 func BenchmarkTBinaryHTTP(b *testing.B) {
 	b.StopTimer()
-	srv := DummyServer(b)
+	srv := DummyServer(b, compressed)
 	defer srv.Close()
 	client := DummyClient(srv.URL, false)
 	reqs := GetRandomTestReqs("compressed", b.N, 5, 50000)
@@ -118,7 +118,7 @@ func BenchmarkTBinaryHTTP(b *testing.B) {
 // The same as above except we flip the `compact` flag in the client.
 func BenchmarkTCompactHTTP(b *testing.B) {
 	b.StopTimer()
-	srv := DummyServer(b)
+	srv := DummyServer(b, compressed)
 	defer srv.Close()
 	client := DummyClient(srv.URL, true)
 	reqs := GetRandomTestReqs("compressed", b.N, 5, 50000)
@@ -206,7 +206,7 @@ func BenchmarkTCompactRaw(b *testing.B) {
 
 func BenchmarkConcurrentHttp(b *testing.B) {
 	b.StopTimer()
-	srv := DummyServer(b)
+	srv := DummyServer(b, compressed)
 	defer srv.Close()
 
 	reqs := GetRandomTestReqs("compressed", b.N, 5, 50000)

@@ -18,7 +18,7 @@ func (h *DebugHandler) ServeHTTP(out http.ResponseWriter, req *http.Request) {
 	parts := strings.Split(req.RequestURI[1:], "/")
 	if len(parts) < 1 || len(parts[0]) < 1 {
 		for _, i := range h.Collections {
-			fmt.Fprintf(out, "%s:\t %s (mem: %v)\n", i.Name, i.SourcePath, i.InMem)
+			fmt.Fprintf(out, "%s:\t %s\n", i.Name, i.SourcePath)
 		}
 	} else {
 		col := parts[0]

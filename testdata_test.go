@@ -9,8 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var uncompressed gen.HFileService
-var compressed gen.HFileService
+var uncompressed *ThriftRpcImpl
+var compressed *ThriftRpcImpl
+var compressedMapped *ThriftRpcImpl
 var maxKey int
 
 type hasFatal interface {
@@ -20,19 +21,25 @@ type hasFatal interface {
 }
 
 func Setup(t hasFatal) {
-	maxKey = 5000000
+	maxKey = 10000000
 	if uncompressed != nil && compressed != nil {
 		return
 	}
-	if cs, err := hfile.TestdataCollectionSet("uncompressed", maxKey, false, true); err != nil {
+	if cs, err := hfile.TestdataCollectionSet("uncompressed", maxKey, false, hfile.CopiedToMem); err != nil {
 		t.Fatal(err)
 	} else {
 		uncompressed = &ThriftRpcImpl{cs}
 	}
-	if cs, err := hfile.TestdataCollectionSet("compressed", maxKey, true, true); err != nil {
+	if cs, err := hfile.TestdataCollectionSet("compressed", maxKey, true, hfile.CopiedToMem); err != nil {
 		t.Fatal(err)
 	} else {
 		compressed = &ThriftRpcImpl{cs}
+	}
+
+	if cs, err := hfile.TestdataCollectionSet("compressed", maxKey, true, hfile.MemlockFile); err != nil {
+		t.Fatal(err)
+	} else {
+		compressedMapped = &ThriftRpcImpl{cs}
 	}
 }
 

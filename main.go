@@ -35,7 +35,7 @@ func readSettings() []string {
 
 	flag.BoolVar(&s.debug, "debug", false, "print debug output")
 
-	flag.BoolVar(&s.mlock, "mlock", true, "mlock mapped files in memory (only applies to cmd-line specified files).")
+	flag.BoolVar(&s.mlock, "mlock", true, "mlock mapped files in memory rather than copy to heap.")
 
 	flag.StringVar(&s.configJsonUrl, "config-json", "", "URL of collection configuration json")
 

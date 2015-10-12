@@ -54,11 +54,16 @@ func ConfigsFromCommandline(args []string) []*hfile.CollectionConfig {
 			name = fmt.Sprintf("%s/%s", parent, part)
 		}
 
+		loadMethod := hfile.CopiedToMem
+		if Settings.mlock {
+			loadMethod = hfile.MemlockFile
+		}
+
 		configs[i] = &hfile.CollectionConfig{
 			Name:            name,
 			SourcePath:      nameAndPath[1],
 			LocalPath:       nameAndPath[1],
-			InMem:           Settings.mlock,
+			LoadMethod:      loadMethod,
 			Debug:           Settings.debug,
 			ParentName:      parent,
 			ShardFunction:   sfunc,
@@ -98,16 +103,20 @@ func ConfigsFromJsonUrl(url string) []*hfile.CollectionConfig {
 		if spec.Url != "" {
 			name := fmt.Sprintf("%s/%d", spec.Collection, spec.Partition)
 
-			mlock := true
+			loadMethod := hfile.CopiedToMem
+			if Settings.mlock {
+				loadMethod = hfile.MemlockFile
+			}
+
 			if spec.Ondemand {
-				mlock = false
+				loadMethod = hfile.OnDisk
 			}
 
 			ret[i] = &hfile.CollectionConfig{
 				Name:            name,
 				SourcePath:      spec.Url,
 				LocalPath:       "",
-				InMem:           mlock,
+				LoadMethod:      loadMethod,
 				Debug:           Settings.debug,
 				ParentName:      spec.Collection,
 				ShardFunction:   spec.Function,

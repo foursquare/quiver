@@ -10,7 +10,7 @@ import (
 	_ "expvar"
 	_ "net/http/pprof"
 
-	"github.com/dt/go-metrics-reporting"
+	"github.com/foursquare/fsgo/report"
 	"github.com/foursquare/quiver/hfile"
 )
 

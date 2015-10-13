@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/dt/httpthrift"
+	"github.com/foursquare/fsgo/net/httpthrift"
 	"github.com/foursquare/quiver/gen"
 )
 

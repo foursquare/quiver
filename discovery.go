@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dt/curator.go"
-	"github.com/dt/go-curator-discovery"
+	"github.com/foursquare/curator.go"
+	"github.com/foursquare/fsgo/net/discovery"
 	"github.com/foursquare/quiver/hfile"
 )
 

@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dt/httpthrift"
+	"github.com/foursquare/fsgo/net/httpthrift"
 	"github.com/foursquare/quiver/gen"
 )
 

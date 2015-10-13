@@ -9,7 +9,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dt/go-metrics-reporting"
+	"github.com/foursquare/fsgo/report"
 	"github.com/foursquare/quiver/gen"
 	"github.com/foursquare/quiver/util"
 )

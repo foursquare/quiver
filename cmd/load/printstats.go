@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dt/go-metrics"
-	"github.com/dt/go-metrics-reporting"
+	"github.com/foursquare/fsgo/report"
+	"github.com/foursquare/go-metrics"
 )
 
 const CLR_0 = "\x1b[0m"

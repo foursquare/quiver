@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/dt/go-metrics-reporting"
-	"github.com/dt/httpthrift"
-	"github.com/foursquare/quiver/hfile"
+	"github.com/foursquare/fsgo/net/httpthrift"
+	"github.com/foursquare/fsgo/report"
 	"github.com/foursquare/quiver/gen"
+	"github.com/foursquare/quiver/hfile"
 )
 
 func NewHttpRpcHandler(cs *hfile.CollectionSet, stats *report.Recorder) *httpthrift.ThriftOverHTTPHandler {

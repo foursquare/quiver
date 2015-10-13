@@ -12,7 +12,7 @@ import (
 	_ "expvar"
 	_ "net/http/pprof"
 
-	"github.com/dt/go-metrics"
+	"github.com/foursquare/go-metrics"
 )
 
 var timer metrics.Timer

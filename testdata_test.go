@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/hfile"
 	"github.com/foursquare/quiver/gen"
 	"github.com/stretchr/testify/assert"
 )

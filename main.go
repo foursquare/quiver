@@ -11,7 +11,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/dt/go-metrics-reporting"
-	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/hfile"
 )
 
 type SettingDefs struct {

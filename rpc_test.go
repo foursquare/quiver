@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/hfile"
 )
 
 func TestGetValuesSingle(t *testing.T) {

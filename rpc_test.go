@@ -73,7 +73,7 @@ func BenchmarkHandlerCompressed(b *testing.B) {
 
 func BenchmarkHandlerMapped(b *testing.B) {
 	b.StopTimer()
-	Setup(b)
+	SetupMapped(b)
 	reqs := GetRandomTestReqs("compressed", b.N, 5, maxKey)
 	b.StartTimer()
 

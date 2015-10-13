@@ -31,13 +31,13 @@ func fakeDataReader(t *testing.T, compress, multi bool) (string, *Reader) {
 		err = GenerateMockHfile(f.Name(), 100000, 1024*4, compress, false, false)
 		assert.Nil(t, err, "cannot write to tempfile: ", err)
 	}
-	reader, err := NewReader("sample", f.Name(), CopiedToMem, testing.Verbose())
+	reader, err := NewReader("sample", f.Name(), CopiedToMem, false)
 	assert.Nil(t, err, "error creating reader:", err)
 	return f.Name(), reader
 }
 
 func TestFirstKeys(t *testing.T) {
-	r, err := NewReader("sample", "testdata/pairs.hfile", CopiedToMem, testing.Verbose())
+	r, err := NewReader("sample", "testdata/pairs.hfile", CopiedToMem, false)
 	assert.Nil(t, err, "cannot open sample: ", err)
 
 	assert.True(t, bytes.Equal(r.index[0].firstKeyBytes, firstSampleKey),

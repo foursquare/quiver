@@ -4,8 +4,8 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/foursquare/quiver/hfile"
 	"github.com/foursquare/quiver/gen"
+	"github.com/foursquare/quiver/hfile"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +35,9 @@ func Setup(t hasFatal) {
 	} else {
 		compressed = &ThriftRpcImpl{cs}
 	}
+}
 
+func SetupMapped(t hasFatal) {
 	if cs, err := hfile.TestdataCollectionSet("compressed", maxKey, true, hfile.MemlockFile); err != nil {
 		t.Fatal(err)
 	} else {

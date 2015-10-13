@@ -16,11 +16,11 @@ func TestKeysort(t *testing.T) {
 
 	keys := [][]byte{ff, bbc, ab, abc, e, d}
 	correct := [][]byte{ab, abc, bbc, d, e, ff}
-	t.Log("\n" + PrettyKeys(keys))
+	// t.Log("\n" + PrettyKeys(keys))
 
 	sort.Sort(Keys(keys))
 
-	t.Log("\n" + PrettyKeys(keys))
+	// t.Log("\n" + PrettyKeys(keys))
 	for i, _ := range correct {
 		if !bytes.Equal(correct[i], keys[i]) {
 			t.Fatal("unexpected byte", i, correct[i], keys[i])

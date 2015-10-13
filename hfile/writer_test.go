@@ -3,7 +3,6 @@ package hfile
 import (
 	"bytes"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
@@ -14,12 +13,7 @@ func tempHfile(t *testing.T, compress bool, blockSize int, keys [][]byte, values
 	fp, err := ioutil.TempFile("", "demohfile")
 	assert.Nil(t, err, "error creating tempfile:", err)
 
-	if testing.Verbose() {
-		log.Println("###############")
-		log.Println("Writing temp hfile:", fp.Name())
-		log.Println("###############")
-	}
-	w, err := NewWriter(fp, compress, blockSize, testing.Verbose())
+	w, err := NewWriter(fp, compress, blockSize, false)
 	assert.Nil(t, err, "error creating writer:", err)
 
 	for i, _ := range keys {
@@ -28,13 +22,7 @@ func tempHfile(t *testing.T, compress bool, blockSize int, keys [][]byte, values
 	}
 	w.Close()
 
-	if testing.Verbose() {
-		log.Println("###############")
-		log.Println("Done writing temp hfile:", fp.Name())
-		log.Println("###############")
-	}
-
-	r, err := NewReader("demo", fp.Name(), CopiedToMem, testing.Verbose())
+	r, err := NewReader("demo", fp.Name(), CopiedToMem, false)
 	assert.Nil(t, err, "error creating reader:", err)
 
 	s := NewScanner(r)
@@ -111,8 +99,8 @@ func TestMultiValueRoundTripCompressed(t *testing.T) {
 }
 
 func TestBigRoundTripCompressed(t *testing.T) {
-	keys := make([][]byte, 1000)
-	vals := make([][]byte, 1000)
+	keys := make([][]byte, 1000000)
+	vals := make([][]byte, 1000000)
 
 	for i, _ := range keys {
 		keys[i] = keyI(i)

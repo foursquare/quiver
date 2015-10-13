@@ -1,8 +1,6 @@
 language: go
 go:
   - 1.5
-script:
-  - sudo bash -c "ulimit -l 256000 && sudo -u $USER CXX="g++-4.8" CC="gcc-4.8" CPP="g++-4.8" PATH=$PATH GOPATH=$GOPATH GOROOT=$GOROOT `which go` test -v ./..."
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
   - sudo apt-get update -qq

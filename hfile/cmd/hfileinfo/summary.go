@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/foursquare/gohfile"
+	"github.com/foursquare/quiver/hfile"
 )
 
 func main() {

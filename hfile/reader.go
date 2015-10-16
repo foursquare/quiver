@@ -143,14 +143,14 @@ func (r *Reader) loadIndex(data []byte) error {
 		dataBlock.size = binary.BigEndian.Uint32(data[i:])
 		i += uint64(binary.Size(dataBlock.size))
 
-		firstKeyLen, s := binary.Uvarint(data[i:])
+		firstKeyLen, s := vintAndLen(data[i:])
 		if s < 1 || firstKeyLen < 1 {
 			return fmt.Errorf("Failed to read key length, err %d", s)
 		}
 		i += uint64(s)
 
-		dataBlock.firstKeyBytes = data[i : i+firstKeyLen]
-		i += firstKeyLen
+		dataBlock.firstKeyBytes = data[i : i+uint64(firstKeyLen)]
+		i += uint64(firstKeyLen)
 
 		r.index = append(r.index, dataBlock)
 	}

@@ -36,7 +36,7 @@ func vintAndLen(b []byte) (int, int) {
 	}
 
 	if first >= 0x90 {
-		return -256 + int(first), count
+		return int(first) - 0x100, count
 	}
 
 	if first < 0x88 {

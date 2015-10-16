@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/hex"
 	"log"
-	"math"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -59,8 +58,7 @@ func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceCli
 
 // Generate and send a random GetValuesSingle request.
 func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
-	keys := l.randomKeys(numKeys)
+	keys := l.randomKeys()
 	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: keys}
 
 	before := time.Now()
@@ -91,8 +89,7 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 
 // Generate and send a random GetValuesSingle request.
 func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
-	keys := l.randomKeys(numKeys)
+	keys := l.randomKeys()
 	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: keys}
 
 	before := time.Now()
@@ -122,8 +119,8 @@ func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceC
 
 // Generate and send a random GetValuesSingle request.
 func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-	numKeys := int(math.Abs(rand.ExpFloat64()*10) + 1)
-	fullKeys := l.randomKeys(numKeys)
+
+	fullKeys := l.randomKeys()
 	prefixes := make([][]byte, len(fullKeys))
 
 	for i, v := range fullKeys {

@@ -36,6 +36,8 @@ type Load struct {
 
 	mixPrefix, mixIterator, mixMulti int32
 
+	keysPerReqMin, keysPerReqMax, keysPerReqSpread float64
+
 	// for atomic keyset swaps in setKeys.
 	sync.RWMutex
 }
@@ -124,6 +126,12 @@ func main() {
 	workers := flag.Int("workers", 8, "worker pool size")
 	flag.StringVar(&zk, "zk", "", "zookeeper host")
 	qps := flag.Int("qps", 100, "qps to attempt")
+
+	minKeys := flag.Int("keys-min", 10, "min number of keys per request")
+	maxKeys := flag.Int("keys-max", 5000, "max number of keys per request")
+	spreadKeys := flag.Float64("keys-spread", 10, "coefficient for exponential distribution of key count")
+	printSpread := flag.Bool("print-spread", false, "print distribution of key count (over 100000 requests)")
+
 	sample := flag.Int64("sampleSize", 1000, "number of random keys to use")
 
 	mixPrefix := flag.Int("mix-prefix", 10, "getPrefixes traffic mix % (un-alloc is getSingle)")
@@ -174,19 +182,27 @@ func main() {
 	}
 
 	l := &Load{
-		collection:  *collection,
-		sample:      sample,
-		server:      server,
-		diffing:     diffing,
-		diff:        diff,
-		work:        make(chan bool, (*qps)*(*workers)),
-		dropped:     r.GetMeter("dropped"),
-		queueSize:   r.GetGuage("queue"),
-		rtt:         rttName,
-		diffRtt:     diffRtt,
-		mixPrefix:   int32(*mixPrefix),
-		mixIterator: int32(*mixPrefix + *mixIter),
-		mixMulti:    int32(*mixPrefix + *mixIter + *mixMulti),
+		collection:       *collection,
+		sample:           sample,
+		server:           server,
+		diffing:          diffing,
+		diff:             diff,
+		work:             make(chan bool, (*qps)*(*workers)),
+		dropped:          r.GetMeter("dropped"),
+		queueSize:        r.GetGuage("queue"),
+		rtt:              rttName,
+		diffRtt:          diffRtt,
+		mixPrefix:        int32(*mixPrefix),
+		mixIterator:      int32(*mixPrefix + *mixIter),
+		mixMulti:         int32(*mixPrefix + *mixIter + *mixMulti),
+		keysPerReqMin:    float64(*minKeys),
+		keysPerReqMax:    float64(*maxKeys),
+		keysPerReqSpread: *spreadKeys,
+	}
+
+	if *printSpread {
+		fmt.Println("Key count distribtion:")
+		l.printKeySpread()
 	}
 
 	if err := l.setKeys(); err != nil {

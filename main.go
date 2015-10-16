@@ -11,6 +11,7 @@ import (
 	_ "expvar"
 	_ "net/http/pprof"
 
+	"github.com/foursquare/fsgo/adminz"
 	"github.com/foursquare/fsgo/report"
 	"github.com/foursquare/quiver/hfile"
 )
@@ -100,6 +101,18 @@ func main() {
 
 	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs, stats))
 	http.Handle("/", &DebugHandler{cs})
+
+	adminzPages := adminz.New()
+	adminzPages.KillfilePaths(adminz.Killfiles(fmt.Sprintf("%s", Settings.port)))
+	adminzPages.Pause(func() error {
+		registrations.Leave()
+		return nil
+	})
+	adminzPages.Resume(func() error {
+		registrations.Join(hostname, Settings.discoveryPath, configs, 0)
+		return nil
+	})
+	adminzPages.Build()
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", Settings.port), nil))
 }

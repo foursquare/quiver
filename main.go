@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	_ "expvar"
 	_ "net/http/pprof"
@@ -73,6 +74,17 @@ func main() {
 		MaybeReportTo(graphite).
 		SetAsDefault()
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "localhost"
+	}
+
+	registrations := new(Registrations)
+	if Settings.discoveryPath != "" {
+		registrations.Connect()
+		defer registrations.Close()
+	}
+
 	configs := getCollectionConfig(args)
 
 	log.Printf("Loading collections (debug %v)...\n", Settings.debug)
@@ -80,21 +92,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "localhost"
-	}
-
-	registrations := new(Registrations)
+	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)
 
 	if Settings.discoveryPath != "" {
-		registrations.Connect()
-		registrations.Join(hostname, Settings.discoveryPath, configs)
-		defer registrations.Close()
+		go registrations.Join(hostname, Settings.discoveryPath, configs, 5*time.Second)
 	}
-
-	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)
 
 	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs, stats))
 	http.Handle("/", &DebugHandler{cs})

@@ -33,10 +33,14 @@ func (r *Registrations) Connect() {
 	}
 }
 
-func (r *Registrations) Join(hostname, base string, configs []*hfile.CollectionConfig) {
+func (r *Registrations) Join(hostname, base string, configs []*hfile.CollectionConfig, wait time.Duration) {
 	if hostname == "localhost" {
 		log.Fatal("invalid hostname for service discovery registration:", hostname)
 	}
+
+	log.Println("Waiting to join service discovery", wait)
+	time.Sleep(wait)
+	log.Println("Joining service discovery...")
 
 	r.Lock()
 	defer r.Unlock()

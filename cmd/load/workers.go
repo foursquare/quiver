@@ -24,7 +24,7 @@ func renderErr(raw error) string {
 }
 
 // starts count worker processes, each with their own thttp client(s), watching the work chan.
-func (l *Load) startWorkers(count int) {
+func (l *Load) startWorkers(count int, maxQps bool) {
 	for i := 0; i < count; i++ {
 		go func() {
 			client := GetQuiverClient(l.server)
@@ -33,7 +33,9 @@ func (l *Load) startWorkers(count int) {
 				diff = GetQuiverClient(l.diff)
 			}
 			for {
-				<-l.work
+				if !maxQps {
+					<-l.work
+				}
 				l.sendOne(client, diff)
 			}
 		}()

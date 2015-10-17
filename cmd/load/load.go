@@ -125,7 +125,9 @@ func main() {
 	graphite := report.Flag()
 	workers := flag.Int("workers", 8, "worker pool size")
 	flag.StringVar(&zk, "zk", "", "zookeeper host")
+
 	qps := flag.Int("qps", 100, "qps to attempt")
+	maxQps := flag.Bool("max-qps", false, "Each workers sends a query as soon as the previous response is processed")
 
 	minKeys := flag.Int("keys-min", 10, "min number of keys per request")
 	maxKeys := flag.Int("keys-max", 5000, "max number of keys per request")
@@ -187,7 +189,7 @@ func main() {
 		server:           server,
 		diffing:          diffing,
 		diff:             diff,
-		work:             make(chan bool, (*qps)*(*workers)),
+		work:             make(chan bool, (*workers)),
 		dropped:          r.GetMeter("dropped"),
 		queueSize:        r.GetGuage("queue"),
 		rtt:              rttName,
@@ -209,14 +211,19 @@ func main() {
 		fmt.Println("Failed to fetch testing keys:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("Sending %dqps to %s (%s), drawing from %d random keys...\n", *qps, name, server(), len(l.keys))
+
+	if *maxQps {
+		fmt.Printf("Sending max qps to %s (%s), drawing from %d random keys...\n", name, server(), len(l.keys))
+	} else {
+		fmt.Printf("Sending %dqps to %s (%s), drawing from %d random keys...\n", *qps, name, server(), len(l.keys))
+		go l.generator(*qps)
+	}
 	if l.diffing {
 		fmt.Printf("Diffing against %s (%s)\n", diffName, l.diff())
 	}
 
-	l.startWorkers(*workers)
+	l.startWorkers(*workers, *maxQps)
 	go l.startKeyFetcher(time.Minute)
-	go l.generator(*qps)
 
 	reader := bufio.NewReader(os.Stdin)
 

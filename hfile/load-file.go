@@ -2,7 +2,7 @@ package hfile
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 
@@ -46,9 +46,11 @@ func loadFile(name, path string, method LoadMethod) ([]byte, error) {
 		log.Printf("[Reader.NewReader] Locked %s.\n", name)
 
 	case CopiedToMem:
+		defer f.Close()
+
 		log.Printf("[Reader.NewReader] Reading in %s (%.02fmb)...\n", name, sizeMb)
-		data, err := ioutil.ReadFile(path)
-		if err != nil {
+		data := make([]byte, fi.Size())
+		if _, err := io.ReadFull(f, data); err != nil {
 			log.Printf("[Reader.NewReader] Error reading in %s: %s\n", name, err.Error())
 			return nil, err
 		}

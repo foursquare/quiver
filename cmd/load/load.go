@@ -223,7 +223,6 @@ func main() {
 	}
 
 	l.startWorkers(*workers, *maxQps)
-	go l.startKeyFetcher(time.Minute)
 
 	reader := bufio.NewReader(os.Stdin)
 

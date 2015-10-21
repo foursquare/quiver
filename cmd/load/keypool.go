@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/foursquare/quiver/gen"
 	"github.com/foursquare/quiver/util"
@@ -14,14 +13,6 @@ import (
 
 func (l *Load) pickKeyCount() int {
 	return int(math.Min(math.Abs(rand.ExpFloat64()*l.keysPerReqSpread)+l.keysPerReqMin, l.keysPerReqMax))
-}
-
-// Re-fetches a new batch of keys every freq, swapping out the in-use set.
-func (l *Load) startKeyFetcher(freq time.Duration) {
-	for _ = range time.Tick(freq) {
-		//log.Println("Fetching new keys...")
-		l.setKeys()
-	}
 }
 
 // Fetches l.sample random keys for l.collection, sorts them and overwrites (with locking) l.keys.

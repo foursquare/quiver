@@ -129,6 +129,8 @@ func (r *Reader) loadIndex(data []byte) error {
 
 	i := r.dataIndexOffset
 
+	r.index = make([]Block, 0, r.dataIndexCount)
+
 	if bytes.Compare(data[i:i+8], IndexMagic) != 0 {
 		return errors.New("bad data index magic")
 	}

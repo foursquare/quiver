@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"reflect"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/foursquare/fsgo/report"
@@ -58,10 +59,28 @@ func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceCli
 
 }
 
+
 // Generate and send a random GetValuesSingle request.
 func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
+	var wg sync.WaitGroup
 	keys := l.randomKeys()
 	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: keys}
+
+	var diffResp *gen.SingleHFileKeyResponse
+	var diffErr error
+	if diff != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			beforeDiff := time.Now()
+			diffResp, diffErr = diff.GetValuesSingle(r)
+			if diffErr != nil {
+				log.Println("[GetValuesSingle] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(keys))
+			}
+			report.TimeSince(l.diffRtt+".overall", beforeDiff)
+			report.TimeSince(l.diffRtt+".getValuesSingle", beforeDiff)
+		}()
+	}
 
 	before := time.Now()
 	resp, err := client.GetValuesSingle(r)
@@ -72,15 +91,7 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 	report.TimeSince(l.rtt+".getValuesSingle", before)
 
 	if diff != nil {
-		beforeDiff := time.Now()
-		diffResp, diffErr := diff.GetValuesSingle(r)
-		if diffErr != nil {
-
-			log.Println("[GetValuesSingle] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(keys))
-		}
-		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".getValuesSingle", beforeDiff)
-
+		wg.Wait()
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
 			report.Inc("diffs")
 			report.Inc("diffs.getValuesSingle")
@@ -91,8 +102,26 @@ func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileService
 
 // Generate and send a random GetValuesSingle request.
 func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
+	var wg sync.WaitGroup
+
 	keys := l.randomKeys()
 	r := &gen.SingleHFileKeyRequest{HfileName: &l.collection, SortedKeys: keys}
+
+	var diffResp *gen.MultiHFileKeyResponse
+	var diffErr error
+	if diff != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			beforeDiff := time.Now()
+			diffResp, diffErr = diff.GetValuesMulti(r)
+			if diffErr != nil {
+				log.Println("[GetValuesMulti] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(keys))
+			}
+			report.TimeSince(l.diffRtt+".overall", beforeDiff)
+			report.TimeSince(l.diffRtt+".getValuesMulti", beforeDiff)
+		}()
+	}
 
 	before := time.Now()
 	resp, err := client.GetValuesMulti(r)
@@ -103,14 +132,7 @@ func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceC
 	report.TimeSince(l.rtt+".getValuesMulti", before)
 
 	if diff != nil {
-		beforeDiff := time.Now()
-		diffResp, diffErr := diff.GetValuesMulti(r)
-		if diffErr != nil {
-			log.Println("[GetValuesMulti] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(keys))
-		}
-		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".getValuesMulti", beforeDiff)
-
+		wg.Wait()
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
 			report.Inc("diffs")
 			report.Inc("diffs.getValuesMulti")
@@ -121,6 +143,7 @@ func (l *Load) sendMulti(client *gen.HFileServiceClient, diff *gen.HFileServiceC
 
 // Generate and send a random GetValuesSingle request.
 func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
+	var wg sync.WaitGroup
 
 	fullKeys := l.randomKeys()
 	prefixes := make([][]byte, len(fullKeys))
@@ -132,6 +155,22 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 	limit := int32(10) // request a max of 10 k/v pairs
 	r := &gen.PrefixRequest{HfileName: &l.collection, SortedKeys: prefixes, ValueLimit: &limit}
 
+	var diffResp *gen.PrefixResponse
+	var diffErr error
+	if diff != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			beforeDiff := time.Now()
+			diffResp, diffErr = diff.GetValuesForPrefixes(r)
+			if diffErr != nil {
+				log.Println("[GetValuesForPrefixes] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(prefixes))
+			}
+			report.TimeSince(l.diffRtt+".overall", beforeDiff)
+			report.TimeSince(l.diffRtt+".getValuesForPrefixes", beforeDiff)
+		}()
+	}
+
 	before := time.Now()
 	resp, err := client.GetValuesForPrefixes(r)
 	if err != nil {
@@ -141,13 +180,7 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 	report.TimeSince(l.rtt+".getValuesForPrefixes", before)
 
 	if diff != nil {
-		beforeDiff := time.Now()
-		diffResp, diffErr := diff.GetValuesForPrefixes(r)
-		if diffErr != nil {
-			log.Println("[GetValuesForPrefixes] Error fetching diff value:", renderErr(diffErr), util.PrettyKeys(prefixes))
-		}
-		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".getValuesForPrefixes", beforeDiff)
+		wg.Wait()
 
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
 			report.Inc("diffs")
@@ -187,11 +220,28 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 
 // Generate and send a random GetValuesSingle request.
 func (l *Load) sendGetIterator(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
-
+	var wg sync.WaitGroup
 	includeValues := true
 	k := l.randomKey()
 	lim := int32(10)
 	r := &gen.IteratorRequest{HfileName: &l.collection, IncludeValues: &includeValues, LastKey: k, ResponseLimit: &lim}
+
+	var diffResp *gen.IteratorResponse
+	var diffErr error
+	if diff != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			beforeDiff := time.Now()
+			diffResp, diffErr = diff.GetIterator(r)
+			if diffErr != nil {
+				log.Println("[GetIterator] Error fetching diff value:", renderErr(diffErr), k)
+			}
+			report.TimeSince(l.diffRtt+".overall", beforeDiff)
+			report.TimeSince(l.diffRtt+".getIterator", beforeDiff)
+
+		}()
+	}
 
 	before := time.Now()
 	resp, err := client.GetIterator(r)
@@ -202,14 +252,7 @@ func (l *Load) sendGetIterator(client *gen.HFileServiceClient, diff *gen.HFileSe
 	report.TimeSince(l.rtt+".getIterator", before)
 
 	if diff != nil {
-		beforeDiff := time.Now()
-		diffResp, diffErr := diff.GetIterator(r)
-		if diffErr != nil {
-			log.Println("[GetIterator] Error fetching diff value:", renderErr(diffErr), k)
-		}
-		report.TimeSince(l.diffRtt+".overall", beforeDiff)
-		report.TimeSince(l.diffRtt+".getIterator", beforeDiff)
-
+		wg.Wait()
 		if err == nil && diffErr == nil && !reflect.DeepEqual(resp, diffResp) {
 			report.Inc("diffs")
 			report.Inc("diffs.GetIterator")

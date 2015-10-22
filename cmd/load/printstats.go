@@ -46,10 +46,10 @@ func (l *Load) PrintTiming(suffix string, du float64) {
 		PrintDiffTimingLine("p99", ps[2], psDiff[2], du)
 		PrintDiffTimingLine("p90", ps[1], psDiff[1], du)
 		PrintDiffTimingLine("p50", ps[0], psDiff[0], du)
-		fmt.Println()
 	} else {
-		fmt.Printf("%s\tp99\t%6.2fms\tp50 %6.2f\n", l.rtt, ps[2]/du, ps[0]/du)
+		fmt.Printf("%-15s\t p99\t%6.2fms\tp50 %6.2f\n", suffix[1:], ps[2]/du, ps[0]/du)
 	}
+	fmt.Println()
 }
 
 func (l *Load) PrintSummary() {

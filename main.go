@@ -103,7 +103,7 @@ func main() {
 	http.Handle("/", &DebugHandler{cs})
 
 	adminzPages := adminz.New()
-	adminzPages.KillfilePaths(adminz.Killfiles(fmt.Sprintf("%s", Settings.port)))
+	adminzPages.KillfilePaths(adminz.Killfiles(Settings.port))
 	adminzPages.Pause(func() error {
 		registrations.Leave()
 		return nil

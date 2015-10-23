@@ -35,6 +35,9 @@ type HFileService interface {
 	//  - Req
 	GetInfo(req *InfoRequest) (r []*HFileInfo, err error)
 	// Parameters:
+	//  - Req
+	ScanCollectionAndSampleKeys(req *InfoRequest) (r []*HFileInfo, err error)
+	// Parameters:
 	//  - WaitInMillis
 	TestTimeout(waitInMillis int32) (r int32, err error)
 }
@@ -504,6 +507,79 @@ func (p *HFileServiceClient) recvGetInfo() (value []*HFileInfo, err error) {
 }
 
 // Parameters:
+//  - Req
+func (p *HFileServiceClient) ScanCollectionAndSampleKeys(req *InfoRequest) (r []*HFileInfo, err error) {
+	if err = p.sendScanCollectionAndSampleKeys(req); err != nil {
+		return
+	}
+	return p.recvScanCollectionAndSampleKeys()
+}
+
+func (p *HFileServiceClient) sendScanCollectionAndSampleKeys(req *InfoRequest) (err error) {
+	oprot := p.OutputProtocol
+	if oprot == nil {
+		oprot = p.ProtocolFactory.GetProtocol(p.Transport)
+		p.OutputProtocol = oprot
+	}
+	p.SeqId++
+	if err = oprot.WriteMessageBegin("scanCollectionAndSampleKeys", thrift.CALL, p.SeqId); err != nil {
+		return
+	}
+	args := ScanCollectionAndSampleKeysArgs{
+		Req: req,
+	}
+	if err = args.Write(oprot); err != nil {
+		return
+	}
+	if err = oprot.WriteMessageEnd(); err != nil {
+		return
+	}
+	return oprot.Flush()
+}
+
+func (p *HFileServiceClient) recvScanCollectionAndSampleKeys() (value []*HFileInfo, err error) {
+	iprot := p.InputProtocol
+	if iprot == nil {
+		iprot = p.ProtocolFactory.GetProtocol(p.Transport)
+		p.InputProtocol = iprot
+	}
+	_, mTypeId, seqId, err := iprot.ReadMessageBegin()
+	if err != nil {
+		return
+	}
+	if mTypeId == thrift.EXCEPTION {
+		error31 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error32 error
+		error32, err = error31.Read(iprot)
+		if err != nil {
+			return
+		}
+		if err = iprot.ReadMessageEnd(); err != nil {
+			return
+		}
+		err = error32
+		return
+	}
+	if p.SeqId != seqId {
+		err = thrift.NewTApplicationException(thrift.BAD_SEQUENCE_ID, "scanCollectionAndSampleKeys failed: out of sequence response")
+		return
+	}
+	result := ScanCollectionAndSampleKeysResult{}
+	if err = result.Read(iprot); err != nil {
+		return
+	}
+	if err = iprot.ReadMessageEnd(); err != nil {
+		return
+	}
+	if result.Ex != nil {
+		err = result.Ex
+		return
+	}
+	value = result.GetSuccess()
+	return
+}
+
+// Parameters:
 //  - WaitInMillis
 func (p *HFileServiceClient) TestTimeout(waitInMillis int32) (r int32, err error) {
 	if err = p.sendTestTimeout(waitInMillis); err != nil {
@@ -545,16 +621,16 @@ func (p *HFileServiceClient) recvTestTimeout() (value int32, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error31 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error32 error
-		error32, err = error31.Read(iprot)
+		error33 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error34 error
+		error34, err = error33.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error32
+		err = error34
 		return
 	}
 	if p.SeqId != seqId {
@@ -592,15 +668,16 @@ func (p *HFileServiceProcessor) ProcessorMap() map[string]thrift.TProcessorFunct
 
 func NewHFileServiceProcessor(handler HFileService) *HFileServiceProcessor {
 
-	self33 := &HFileServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
-	self33.processorMap["getValuesSingle"] = &hFileServiceProcessorGetValuesSingle{handler: handler}
-	self33.processorMap["getValuesMulti"] = &hFileServiceProcessorGetValuesMulti{handler: handler}
-	self33.processorMap["getValuesForPrefixes"] = &hFileServiceProcessorGetValuesForPrefixes{handler: handler}
-	self33.processorMap["getValuesMultiSplitKeys"] = &hFileServiceProcessorGetValuesMultiSplitKeys{handler: handler}
-	self33.processorMap["getIterator"] = &hFileServiceProcessorGetIterator{handler: handler}
-	self33.processorMap["getInfo"] = &hFileServiceProcessorGetInfo{handler: handler}
-	self33.processorMap["testTimeout"] = &hFileServiceProcessorTestTimeout{handler: handler}
-	return self33
+	self35 := &HFileServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
+	self35.processorMap["getValuesSingle"] = &hFileServiceProcessorGetValuesSingle{handler: handler}
+	self35.processorMap["getValuesMulti"] = &hFileServiceProcessorGetValuesMulti{handler: handler}
+	self35.processorMap["getValuesForPrefixes"] = &hFileServiceProcessorGetValuesForPrefixes{handler: handler}
+	self35.processorMap["getValuesMultiSplitKeys"] = &hFileServiceProcessorGetValuesMultiSplitKeys{handler: handler}
+	self35.processorMap["getIterator"] = &hFileServiceProcessorGetIterator{handler: handler}
+	self35.processorMap["getInfo"] = &hFileServiceProcessorGetInfo{handler: handler}
+	self35.processorMap["scanCollectionAndSampleKeys"] = &hFileServiceProcessorScanCollectionAndSampleKeys{handler: handler}
+	self35.processorMap["testTimeout"] = &hFileServiceProcessorTestTimeout{handler: handler}
+	return self35
 }
 
 func (p *HFileServiceProcessor) Process(iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
@@ -613,12 +690,12 @@ func (p *HFileServiceProcessor) Process(iprot, oprot thrift.TProtocol) (success 
 	}
 	iprot.Skip(thrift.STRUCT)
 	iprot.ReadMessageEnd()
-	x34 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function "+name)
+	x36 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function "+name)
 	oprot.WriteMessageBegin(name, thrift.EXCEPTION, seqId)
-	x34.Write(oprot)
+	x36.Write(oprot)
 	oprot.WriteMessageEnd()
 	oprot.Flush()
-	return false, x34
+	return false, x36
 
 }
 
@@ -923,6 +1000,59 @@ func (p *hFileServiceProcessorGetInfo) Process(seqId int32, iprot, oprot thrift.
 		result.Success = retval
 	}
 	if err2 = oprot.WriteMessageBegin("getInfo", thrift.REPLY, seqId); err2 != nil {
+		err = err2
+	}
+	if err2 = result.Write(oprot); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.Flush(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err != nil {
+		return
+	}
+	return true, err
+}
+
+type hFileServiceProcessorScanCollectionAndSampleKeys struct {
+	handler HFileService
+}
+
+func (p *hFileServiceProcessorScanCollectionAndSampleKeys) Process(seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := ScanCollectionAndSampleKeysArgs{}
+	if err = args.Read(iprot); err != nil {
+		iprot.ReadMessageEnd()
+		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
+		oprot.WriteMessageBegin("scanCollectionAndSampleKeys", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush()
+		return false, err
+	}
+
+	iprot.ReadMessageEnd()
+	result := ScanCollectionAndSampleKeysResult{}
+	var retval []*HFileInfo
+	var err2 error
+	if retval, err2 = p.handler.ScanCollectionAndSampleKeys(args.Req); err2 != nil {
+		switch v := err2.(type) {
+		case *HFileServiceException:
+			result.Ex = v
+		default:
+			x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing scanCollectionAndSampleKeys: "+err2.Error())
+			oprot.WriteMessageBegin("scanCollectionAndSampleKeys", thrift.EXCEPTION, seqId)
+			x.Write(oprot)
+			oprot.WriteMessageEnd()
+			oprot.Flush()
+			return true, err2
+		}
+	} else {
+		result.Success = retval
+	}
+	if err2 = oprot.WriteMessageBegin("scanCollectionAndSampleKeys", thrift.REPLY, seqId); err2 != nil {
 		err = err2
 	}
 	if err2 = result.Write(oprot); err == nil && err2 != nil {
@@ -2351,11 +2481,11 @@ func (p *GetInfoResult) ReadField0(iprot thrift.TProtocol) error {
 	tSlice := make([]*HFileInfo, 0, size)
 	p.Success = tSlice
 	for i := 0; i < size; i++ {
-		_elem35 := &HFileInfo{}
-		if err := _elem35.Read(iprot); err != nil {
-			return fmt.Errorf("%T error reading struct: %s", _elem35, err)
+		_elem37 := &HFileInfo{}
+		if err := _elem37.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem37, err)
 		}
-		p.Success = append(p.Success, _elem35)
+		p.Success = append(p.Success, _elem37)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return fmt.Errorf("error reading list end: %s", err)
@@ -2433,6 +2563,261 @@ func (p *GetInfoResult) String() string {
 		return "<nil>"
 	}
 	return fmt.Sprintf("GetInfoResult(%+v)", *p)
+}
+
+type ScanCollectionAndSampleKeysArgs struct {
+	Req *InfoRequest `thrift:"req,1" json:"req"`
+}
+
+func NewScanCollectionAndSampleKeysArgs() *ScanCollectionAndSampleKeysArgs {
+	return &ScanCollectionAndSampleKeysArgs{}
+}
+
+var ScanCollectionAndSampleKeysArgs_Req_DEFAULT *InfoRequest
+
+func (p *ScanCollectionAndSampleKeysArgs) GetReq() *InfoRequest {
+	if !p.IsSetReq() {
+		return ScanCollectionAndSampleKeysArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *ScanCollectionAndSampleKeysArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *ScanCollectionAndSampleKeysArgs) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return fmt.Errorf("%T read error: %s", p, err)
+	}
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return fmt.Errorf("%T field %d read error: %s", p, fieldId, err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return fmt.Errorf("%T read struct end error: %s", p, err)
+	}
+	return nil
+}
+
+func (p *ScanCollectionAndSampleKeysArgs) ReadField1(iprot thrift.TProtocol) error {
+	p.Req = &InfoRequest{}
+	if err := p.Req.Read(iprot); err != nil {
+		return fmt.Errorf("%T error reading struct: %s", p.Req, err)
+	}
+	return nil
+}
+
+func (p *ScanCollectionAndSampleKeysArgs) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("scanCollectionAndSampleKeys_args"); err != nil {
+		return fmt.Errorf("%T write struct begin error: %s", p, err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return fmt.Errorf("write field stop error: %s", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return fmt.Errorf("write struct stop error: %s", err)
+	}
+	return nil
+}
+
+func (p *ScanCollectionAndSampleKeysArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err := oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
+		return fmt.Errorf("%T write field begin error 1:req: %s", p, err)
+	}
+	if err := p.Req.Write(oprot); err != nil {
+		return fmt.Errorf("%T error writing struct: %s", p.Req, err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return fmt.Errorf("%T write field end error 1:req: %s", p, err)
+	}
+	return err
+}
+
+func (p *ScanCollectionAndSampleKeysArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ScanCollectionAndSampleKeysArgs(%+v)", *p)
+}
+
+type ScanCollectionAndSampleKeysResult struct {
+	Success []*HFileInfo           `thrift:"success,0" json:"success"`
+	Ex      *HFileServiceException `thrift:"ex,1" json:"ex"`
+}
+
+func NewScanCollectionAndSampleKeysResult() *ScanCollectionAndSampleKeysResult {
+	return &ScanCollectionAndSampleKeysResult{}
+}
+
+var ScanCollectionAndSampleKeysResult_Success_DEFAULT []*HFileInfo
+
+func (p *ScanCollectionAndSampleKeysResult) GetSuccess() []*HFileInfo {
+	return p.Success
+}
+
+var ScanCollectionAndSampleKeysResult_Ex_DEFAULT *HFileServiceException
+
+func (p *ScanCollectionAndSampleKeysResult) GetEx() *HFileServiceException {
+	if !p.IsSetEx() {
+		return ScanCollectionAndSampleKeysResult_Ex_DEFAULT
+	}
+	return p.Ex
+}
+func (p *ScanCollectionAndSampleKeysResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *ScanCollectionAndSampleKeysResult) IsSetEx() bool {
+	return p.Ex != nil
+}
+
+func (p *ScanCollectionAndSampleKeysResult) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return fmt.Errorf("%T read error: %s", p, err)
+	}
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return fmt.Errorf("%T field %d read error: %s", p, fieldId, err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 0:
+			if err := p.ReadField0(iprot); err != nil {
+				return err
+			}
+		case 1:
+			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return fmt.Errorf("%T read struct end error: %s", p, err)
+	}
+	return nil
+}
+
+func (p *ScanCollectionAndSampleKeysResult) ReadField0(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return fmt.Errorf("error reading list begin: %s", err)
+	}
+	tSlice := make([]*HFileInfo, 0, size)
+	p.Success = tSlice
+	for i := 0; i < size; i++ {
+		_elem38 := &HFileInfo{}
+		if err := _elem38.Read(iprot); err != nil {
+			return fmt.Errorf("%T error reading struct: %s", _elem38, err)
+		}
+		p.Success = append(p.Success, _elem38)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return fmt.Errorf("error reading list end: %s", err)
+	}
+	return nil
+}
+
+func (p *ScanCollectionAndSampleKeysResult) ReadField1(iprot thrift.TProtocol) error {
+	p.Ex = &HFileServiceException{}
+	if err := p.Ex.Read(iprot); err != nil {
+		return fmt.Errorf("%T error reading struct: %s", p.Ex, err)
+	}
+	return nil
+}
+
+func (p *ScanCollectionAndSampleKeysResult) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("scanCollectionAndSampleKeys_result"); err != nil {
+		return fmt.Errorf("%T write struct begin error: %s", p, err)
+	}
+	if err := p.writeField0(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return fmt.Errorf("write field stop error: %s", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return fmt.Errorf("write struct stop error: %s", err)
+	}
+	return nil
+}
+
+func (p *ScanCollectionAndSampleKeysResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err := oprot.WriteFieldBegin("success", thrift.LIST, 0); err != nil {
+			return fmt.Errorf("%T write field begin error 0:success: %s", p, err)
+		}
+		if err := oprot.WriteListBegin(thrift.STRUCT, len(p.Success)); err != nil {
+			return fmt.Errorf("error writing list begin: %s", err)
+		}
+		for _, v := range p.Success {
+			if err := v.Write(oprot); err != nil {
+				return fmt.Errorf("%T error writing struct: %s", v, err)
+			}
+		}
+		if err := oprot.WriteListEnd(); err != nil {
+			return fmt.Errorf("error writing list end: %s", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 0:success: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *ScanCollectionAndSampleKeysResult) writeField1(oprot thrift.TProtocol) (err error) {
+	if p.IsSetEx() {
+		if err := oprot.WriteFieldBegin("ex", thrift.STRUCT, 1); err != nil {
+			return fmt.Errorf("%T write field begin error 1:ex: %s", p, err)
+		}
+		if err := p.Ex.Write(oprot); err != nil {
+			return fmt.Errorf("%T error writing struct: %s", p.Ex, err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return fmt.Errorf("%T write field end error 1:ex: %s", p, err)
+		}
+	}
+	return err
+}
+
+func (p *ScanCollectionAndSampleKeysResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ScanCollectionAndSampleKeysResult(%+v)", *p)
 }
 
 type TestTimeoutArgs struct {

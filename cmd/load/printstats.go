@@ -84,7 +84,7 @@ func (l *Load) PrintSummary() {
 		}
 	})
 
-	sort.Strings(interesting)
+	sort.Sort(sort.Reverse(sort.StringSlice(interesting)))
 
 	for _, i := range interesting {
 		l.PrintTiming(i, du)

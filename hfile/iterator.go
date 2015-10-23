@@ -42,6 +42,14 @@ func (it *Iterator) Reset() {
 	it.ResetState()
 }
 
+/*
+  Position the iterator at-or-after requested key by seeking forward from current position.
+
+  If already at-or-after, this is a no-op.
+  Otherwise, if the requested key exists, it will be positioned there, otherwise at the first key
+  greater than the requested one.
+  Returns true if, after positioning, the iterator is on a valid key (eg not at EOF), same as Next.
+*/
 func (it *Iterator) Seek(requested []byte) (bool, error) {
 	var err error
 
@@ -57,6 +65,7 @@ func (it *Iterator) Seek(requested []byte) (bool, error) {
 	}
 
 	blk := it.hfile.FindBlock(it.dataBlockIndex, requested)
+
 	if it.hfile.Debug {
 		log.Printf("[Iterator.Seek] picked block %d, cur %d\n", blk, it.dataBlockIndex)
 		if len(it.hfile.index) > blk+1 {
@@ -66,12 +75,12 @@ func (it *Iterator) Seek(requested []byte) (bool, error) {
 		}
 	}
 
-	if blk != it.dataBlockIndex {
+	if blk != it.dataBlockIndex { // if, and only if, FindBlock returned a block other than current.
 		if it.hfile.Debug {
 			log.Println("[Iterator.Seek] new block!")
 		}
-		it.block = nil
 		it.dataBlockIndex = blk
+		it.block = nil // make Next load the new block.
 	}
 
 	ok, err := it.Next()
@@ -107,45 +116,60 @@ func (it *Iterator) Seek(requested []byte) (bool, error) {
 	return ok, err
 }
 
+/*
+  Load a kv pair into it.key/it.value and advance the iterator.
+  Return true if a kv pair was loaded (eg can call Key), or false if at EOF.
+*/
 func (it *Iterator) Next() (bool, error) {
 	var err error
 
 	it.key = nil
 	it.value = nil
 
-	if it.dataBlockIndex >= len(it.hfile.index) {
+	if it.dataBlockIndex >= len(it.hfile.index) { // EOF, we're out of blocks.
 		return false, nil
 	}
 
-	if it.block == nil {
+	if it.block == nil { // current block has not been loaded yet.
 		it.block, err = it.hfile.GetBlockBuf(it.dataBlockIndex, it.buf)
-		it.pos = 8
 		if err != nil {
 			return false, err
 		}
+		it.pos = len(DataMagic) // skip the magic bytes
 	}
 
-	if len(it.block)-it.pos <= 0 {
+	if len(it.block)-it.pos <= 0 { // nothing left in this block to read, need a new block.
 		it.dataBlockIndex += 1
-		it.block = nil
+		it.block = nil // will cause loading of the block in the next call.
 		return it.Next()
 	}
 
+	// 4 bytes each for key and value lengths, so some pointer arithmatic.
 	keyLen := int(binary.BigEndian.Uint32(it.block[it.pos : it.pos+4]))
 	valLen := int(binary.BigEndian.Uint32(it.block[it.pos+4 : it.pos+8]))
+	it.pos += 8
 
-	it.key = it.block[it.pos+8 : it.pos+8+keyLen]
-	it.value = it.block[it.pos+8+keyLen : it.pos+8+keyLen+valLen]
-	it.pos += keyLen + valLen + 8
+	// it.pos now sitting on the begining of the key
+	it.key = it.block[it.pos : it.pos+keyLen]
+	it.value = it.block[it.pos+keyLen : it.pos+keyLen+valLen]
+	it.pos += keyLen + valLen // move position to next kv pair.
 	return true, nil
 }
 
+/*
+  A copy of the current key
+  it.key is a pointer into a buffer that may get recycled for another block, thus the copy.
+*/
 func (it *Iterator) Key() []byte {
 	ret := make([]byte, len(it.key))
 	copy(ret, it.key)
 	return ret
 }
 
+/*
+  A copy of the current value
+  it.key is a pointer into a buffer that may get recycled for another block, thus the copy.
+*/
 func (it *Iterator) Value() []byte {
 	ret := make([]byte, len(it.value))
 	copy(ret, it.value)

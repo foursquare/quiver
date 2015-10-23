@@ -270,7 +270,7 @@ func GetCollectionInfo(r *hfile.Reader, keySampleSize int) (*gen.HFileInfo, erro
 	return i, nil
 }
 
-func (cs *ThriftRpcImpl) GetInfo(req *gen.InfoRequest) (r []*gen.HFileInfo, err error) {
+func (cs *ThriftRpcImpl) getInfo(req *gen.InfoRequest, allowRandom bool) (r []*gen.HFileInfo, err error) {
 	require := ""
 	if req.IsSetHfileName() {
 		require := req.GetHfileName()
@@ -280,7 +280,7 @@ func (cs *ThriftRpcImpl) GetInfo(req *gen.InfoRequest) (r []*gen.HFileInfo, err 
 	}
 
 	sample := 0
-	if req.IsSetNumRandomKeys() {
+	if req.IsSetNumRandomKeys() && allowRandom {
 		sample = int(*req.NumRandomKeys)
 	}
 
@@ -295,6 +295,14 @@ func (cs *ThriftRpcImpl) GetInfo(req *gen.InfoRequest) (r []*gen.HFileInfo, err 
 	}
 
 	return r, nil
+}
+
+func (cs *ThriftRpcImpl) GetInfo(req *gen.InfoRequest) (r []*gen.HFileInfo, err error) {
+	return cs.getInfo(req, false)
+}
+
+func (cs *ThriftRpcImpl) ScanCollectionAndSampleKeys(req *gen.InfoRequest) (r []*gen.HFileInfo, err error) {
+	return cs.getInfo(req, true)
 }
 
 func (cs *ThriftRpcImpl) TestTimeout(waitInMillis int32) (r int32, err error) {

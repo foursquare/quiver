@@ -22,7 +22,7 @@ func (l *Load) setKeys() error {
 	c := GetQuiverClient(l.server)
 	r := &gen.InfoRequest{&l.collection, l.sample}
 
-	if resp, err := c.GetInfo(r); err != nil {
+	if resp, err := c.ScanCollectionAndSampleKeys(r); err != nil {
 		return err
 	} else {
 		if len(resp) < 1 || len(resp[0].RandomKeys) < 1 {

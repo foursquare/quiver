@@ -113,5 +113,7 @@ service HFileService {
 
   list<HFileInfo> getInfo(1: InfoRequest req) throws (1: HFileServiceException ex);
 
+  list<HFileInfo> scanCollectionAndSampleKeys(1: InfoRequest req) throws (1: HFileServiceException ex);
+
   i32 testTimeout(1: i32 waitInMillis);
 }

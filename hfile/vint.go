@@ -1,3 +1,5 @@
+// Copyright (C) 2015 Foursquare Labs Inc.
+
 package hfile
 
 /*

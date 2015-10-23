@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Daniel Harrison
+// Copyright (C) 2015 Foursquare Labs Inc.
 
 package hfile
 

@@ -91,7 +91,7 @@ func hfileUrlAndName(s string) (func() string, string, discovery.Conn) {
 		}
 
 		log.Printf("discovering instances of %s at %s\n", shard, path)
-		provider := disco.Provider(shard)
+		provider := disco.ProviderWithStrategy(shard, discovery.NewRoundRobinProvider())
 		f := func() string {
 			i, err := provider.GetInstance()
 			if err != nil {

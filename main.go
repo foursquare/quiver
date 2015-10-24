@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"time"
 
 	_ "expvar"
@@ -69,6 +70,8 @@ Usage: %s [options] col1=path1 col2=path2 ...
 }
 
 func main() {
+	fmt.Println("max procs:", runtime.GOMAXPROCS(-1))
+
 	graphite := report.Flag()
 	args := readSettings()
 

@@ -36,6 +36,9 @@ type CollectionConfig struct {
 	// A local copy of SourcePath, if SourcePath is remote, otherwise the same as SourcePath.
 	LocalPath string
 
+	// If the local path has already been read, a cache to avoid re-reading.
+	cachedContent *[]byte
+
 	// If the collection data should be kept in-memory (via mlock).
 	LoadMethod LoadMethod
 
@@ -147,12 +150,36 @@ func fetch(cfg *CollectionConfig) error {
 	}
 	defer resp.Body.Close()
 
-	sz, err := io.Copy(fp, resp.Body)
-	if err != nil {
-		return err
+	sz := int64(0)
+
+	if cfg.LoadMethod == CopiedToMem && resp.ContentLength > 0 {
+		buf := offheapMalloc(resp.ContentLength)
+		read, err := io.ReadFull(resp.Body, buf)
+		if err != nil {
+			return err
+		}
+		if read != int(resp.ContentLength) {
+			log.Printf("[FetchRemote] Uh-oh: read %d bytes, but Content-Length was %d", read, resp.ContentLength)
+		}
+		sz = int64(read / (1024 * 1024))
+		cfg.cachedContent = &buf
+		go func() {
+			log.Printf("[FetchRemote] Flushing %s (%dmb) to disk...\n", cfg.Name, sz)
+			if wrote, err := fp.Write(buf); err != nil {
+				log.Fatal("[FetchRemote] Error flushing", cfg.Name, err)
+			} else if wrote != read {
+				log.Printf("[FetchRemote] Read %db but wrote %db!\n", read, wrote)
+			}
+			log.Printf("[FetchRemote] Flushed %s (%dmb) to disk.\n", cfg.Name, sz)
+		}()
+	} else {
+		sz, err = io.Copy(fp, resp.Body)
+		sz = sz / (1024 * 1024)
+		if err != nil {
+			return err
+		}
 	}
 
-	sz = sz / (1024 * 1024)
 	log.Printf("[FetchRemote] Fetched %s (%dmb).", cfg.Name, sz)
 	return nil
 }

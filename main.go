@@ -105,6 +105,7 @@ func main() {
 	log.Println("Loading collections...")
 
 	cs, err := hfile.LoadCollections(configs, Settings.cachePath, Settings.downloadOnly, stats)
+
 	if err != nil {
 		log.Fatal(err)
 	}

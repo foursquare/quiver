@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"time"
 
 	_ "expvar"
 	_ "net/http/pprof"
@@ -100,24 +99,20 @@ func main() {
 	}
 	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)
 
-	if Settings.discoveryPath != "" {
-		go registrations.Join(hostname, Settings.discoveryPath, configs, 5*time.Second)
-	}
-
 	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs, stats))
 	http.Handle("/", &DebugHandler{cs})
 
-	adminzPages := adminz.New()
-	adminzPages.KillfilePaths(adminz.Killfiles(Settings.port))
-	adminzPages.Pause(func() error {
-		registrations.Leave()
-		return nil
+	admin := adminz.New()
+	admin.KillfilePaths(adminz.Killfiles(Settings.port))
+
+	admin.OnPause(registrations.Leave)
+	admin.OnResume(func() {
+		if Settings.discoveryPath != "" {
+			registrations.Join(hostname, Settings.discoveryPath, configs, 0)
+		}
 	})
-	adminzPages.Resume(func() error {
-		registrations.Join(hostname, Settings.discoveryPath, configs, 0)
-		return nil
-	})
-	adminzPages.Build()
+
+	admin.Start()
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", Settings.port), nil))
 }

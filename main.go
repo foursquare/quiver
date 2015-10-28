@@ -78,6 +78,7 @@ func main() {
 	stats := report.NewRecorder().
 		EnableGCInfoCollection().
 		MaybeReportTo(graphite).
+		RegisterHttp().
 		SetAsDefault()
 
 	hostname, err := os.Hostname()

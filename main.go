@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"time"
 
 	_ "expvar"
 	_ "net/http/pprof"
@@ -93,10 +94,14 @@ func main() {
 	configs := getCollectionConfig(args)
 
 	log.Printf("Loading collections (debug %v)...\n", Settings.debug)
+
+	t := time.Now()
 	cs, err := hfile.LoadCollections(configs, Settings.cachePath)
 	if err != nil {
 		log.Fatal(err)
 	}
+	stats.TimeSince("load", t)
+
 	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)
 
 	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs, stats))

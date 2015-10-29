@@ -13,6 +13,9 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
+
+	"github.com/foursquare/fsgo/report"
 )
 
 type LoadMethod int
@@ -51,7 +54,7 @@ type CollectionSet struct {
 	cache       string
 }
 
-func LoadCollections(collections []*CollectionConfig, cache string) (*CollectionSet, error) {
+func LoadCollections(collections []*CollectionConfig, cache string, stats *report.Recorder) (*CollectionSet, error) {
 	cs := new(CollectionSet)
 	cs.Collections = make(map[string]*Reader)
 
@@ -59,11 +62,12 @@ func LoadCollections(collections []*CollectionConfig, cache string) (*Collection
 		return nil, fmt.Errorf("no collections to load!")
 	}
 
-	if err := downloadCollections(collections, cache); err != nil {
+	if err := downloadCollections(collections, cache, stats); err != nil {
 		log.Println("[LoadCollections] Error fetching collections: ", err)
 		return nil, err
 	}
 
+	t := time.Now()
 	for _, cfg := range collections {
 		reader, err := NewReaderFromConfig(*cfg)
 		if err != nil {
@@ -72,11 +76,18 @@ func LoadCollections(collections []*CollectionConfig, cache string) (*Collection
 
 		cs.Collections[cfg.Name] = reader
 	}
+	if stats != nil {
+		stats.TimeSince("startup.read", t)
+	}
 
 	return cs, nil
 }
 
-func downloadCollections(collections []*CollectionConfig, cache string) error {
+func downloadCollections(collections []*CollectionConfig, cache string, stats *report.Recorder) error {
+	if stats != nil {
+		t := time.Now()
+		defer stats.TimeSince("startup.download", t)
+	}
 	for _, cfg := range collections {
 		if cfg.LocalPath == "" {
 			cfg.LocalPath = cfg.SourcePath

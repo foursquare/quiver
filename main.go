@@ -73,6 +73,7 @@ Usage: %s [options] col1=path1 col2=path2 ...
 
 func main() {
 	fmt.Println("max procs:", runtime.GOMAXPROCS(-1))
+	t := time.Now()
 
 	graphite := report.Flag()
 	args := readSettings()
@@ -89,6 +90,7 @@ func main() {
 	}
 
 	registrations := new(Registrations)
+
 	if Settings.discoveryPath != "" {
 		registrations.Connect()
 		defer registrations.Close()
@@ -98,12 +100,10 @@ func main() {
 
 	log.Println("Loading collections...")
 
-	t := time.Now()
-	cs, err := hfile.LoadCollections(configs, Settings.cachePath)
+	cs, err := hfile.LoadCollections(configs, Settings.cachePath, stats)
 	if err != nil {
 		log.Fatal(err)
 	}
-	stats.TimeSince("load", t)
 
 	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)
 
@@ -121,6 +121,7 @@ func main() {
 	})
 
 	admin.Start()
+	stats.TimeSince("startup.total", t)
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", Settings.port), nil))
 }

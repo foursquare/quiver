@@ -78,27 +78,20 @@ func ConfigsFromCommandline(args []string) []*hfile.CollectionConfig {
 }
 
 func ConfigsFromJsonUrl(url string) []*hfile.CollectionConfig {
-	if Settings.debug {
-		log.Printf("[ConfigsFromJsonUrl] Fetching config from %s...\n", url)
-	}
+	log.Printf("[ConfigsFromJsonUrl] Fetching config from %s...\n", url)
+
 	res, err := http.Get(url)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if Settings.debug {
-		log.Printf("[ConfigsFromJsonUrl] Fetched. Parsing...\n")
-	}
 	defer res.Body.Close()
 
 	var specs CollectionSpecList
-
 	if err := json.NewDecoder(res.Body).Decode(&specs); err != nil {
 		log.Fatal(err)
 	}
 
-	if Settings.debug {
-		log.Printf("[ConfigsFromJsonUrl] Found %d collections.\n", len(specs.Collections))
-	}
+	log.Printf("[ConfigsFromJsonUrl] Found %d collections.\n", len(specs.Collections))
 
 	ret := make([]*hfile.CollectionConfig, len(specs.Collections))
 	for i, spec := range specs.Collections {

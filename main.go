@@ -20,8 +20,10 @@ import (
 )
 
 type SettingDefs struct {
-	port  int
+	port int
+
 	debug bool
+
 	mlock bool
 
 	configJsonUrl string
@@ -38,7 +40,7 @@ func readSettings() []string {
 	s := SettingDefs{}
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 
-	flag.BoolVar(&s.debug, "debug", false, "print debug output")
+	flag.BoolVar(&s.debug, "debug", false, "print more output")
 
 	flag.BoolVar(&s.mlock, "mlock", false, "mlock mapped files in memory rather than copy to heap.")
 
@@ -94,7 +96,7 @@ func main() {
 
 	configs := getCollectionConfig(args)
 
-	log.Printf("Loading collections (debug %v)...\n", Settings.debug)
+	log.Println("Loading collections...")
 
 	t := time.Now()
 	cs, err := hfile.LoadCollections(configs, Settings.cachePath)

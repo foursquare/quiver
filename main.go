@@ -22,6 +22,8 @@ import (
 type SettingDefs struct {
 	port int
 
+	downloadOnly bool
+
 	debug bool
 
 	mlock bool
@@ -41,6 +43,8 @@ func readSettings() []string {
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 
 	flag.BoolVar(&s.debug, "debug", false, "print more output")
+
+	flag.BoolVar(&s.downloadOnly, "download-only", false, "exit after downloading remote files to local cache.")
 
 	flag.BoolVar(&s.mlock, "mlock", false, "mlock mapped files in memory rather than copy to heap.")
 
@@ -91,7 +95,7 @@ func main() {
 
 	registrations := new(Registrations)
 
-	if Settings.discoveryPath != "" {
+	if Settings.discoveryPath != "" && !Settings.downloadOnly {
 		registrations.Connect()
 		defer registrations.Close()
 	}
@@ -100,9 +104,14 @@ func main() {
 
 	log.Println("Loading collections...")
 
-	cs, err := hfile.LoadCollections(configs, Settings.cachePath, stats)
+	cs, err := hfile.LoadCollections(configs, Settings.cachePath, Settings.downloadOnly, stats)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if Settings.downloadOnly {
+		// TODO(davidt): stats.MaybeReportNowTo(graphite)
+		return
 	}
 
 	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)

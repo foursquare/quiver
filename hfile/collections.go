@@ -54,7 +54,7 @@ type CollectionSet struct {
 	cache       string
 }
 
-func LoadCollections(collections []*CollectionConfig, cache string, stats *report.Recorder) (*CollectionSet, error) {
+func LoadCollections(collections []*CollectionConfig, cache string, downloadOnly bool, stats *report.Recorder) (*CollectionSet, error) {
 	cs := new(CollectionSet)
 	cs.Collections = make(map[string]*Reader)
 
@@ -65,6 +65,10 @@ func LoadCollections(collections []*CollectionConfig, cache string, stats *repor
 	if err := downloadCollections(collections, cache, stats); err != nil {
 		log.Println("[LoadCollections] Error fetching collections: ", err)
 		return nil, err
+	}
+
+	if downloadOnly {
+		return nil, nil
 	}
 
 	t := time.Now()

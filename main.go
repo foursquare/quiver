@@ -117,10 +117,19 @@ func main() {
 	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)
 
 	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs, stats))
-	http.Handle("/", &DebugHandler{cs})
 
 	admin := adminz.New()
 	admin.KillfilePaths(adminz.Killfiles(Settings.port))
+
+	admin.Servicez(func() interface{} {
+		return struct {
+			Collections map[string]*hfile.Reader `json:"collections"`
+			Impl        string                   `json:"implementation"`
+		}{
+			cs.Collections,
+			"quiver",
+		}
+	})
 
 	admin.OnPause(registrations.Leave)
 	admin.OnResume(func() {
@@ -128,6 +137,9 @@ func main() {
 			registrations.Join(hostname, Settings.discoveryPath, configs, 0)
 		}
 	})
+
+	http.HandleFunc("/hfilez", admin.ServicezHandler)
+	http.HandleFunc("/", admin.ServicezHandler)
 
 	admin.Start()
 	stats.TimeSince("startup.total", t)

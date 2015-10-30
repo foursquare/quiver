@@ -51,14 +51,16 @@ type Block struct {
 }
 
 func NewReader(name, path string, load LoadMethod, debug bool) (*Reader, error) {
-	return NewReaderFromConfig(CollectionConfig{name, path, path, load, debug, name, "", "", ""})
+	return NewReaderFromConfig(CollectionConfig{name, path, path, nil, load, debug, name, "", "", ""})
 }
 
 func NewReaderFromConfig(cfg CollectionConfig) (*Reader, error) {
 	hfile := new(Reader)
 	hfile.CollectionConfig = cfg
 
-	if data, err := loadFile(cfg.Name, cfg.LocalPath, cfg.LoadMethod); err != nil {
+	if cfg.cachedContent != nil {
+		hfile.data = *cfg.cachedContent
+	} else if data, err := loadFile(cfg.Name, cfg.LocalPath, cfg.LoadMethod); err != nil {
 		return nil, err
 	} else {
 		hfile.data = data

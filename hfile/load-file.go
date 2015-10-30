@@ -26,11 +26,11 @@ This memory will never be freed -- don't use this unless you are sure that is wh
 Putting gigs and gigs of static, long-lived data on the gc's managed heap has the potential to
 throw off any heuristics which to use the total size of the heap (e.g. maintain some % free space).
 */
-func offheapMalloc(size int) []byte {
+func offheapMalloc(size int64) []byte {
 	hdr := reflect.SliceHeader{
 		Data: uintptr(unsafe.Pointer(C.malloc(C.size_t(size)))),
-		Len:  size,
-		Cap:  size,
+		Len:  int(size),
+		Cap:  int(size),
 	}
 	return *(*[]byte)(unsafe.Pointer(&hdr))
 }
@@ -75,7 +75,7 @@ func loadFile(name, path string, method LoadMethod) ([]byte, error) {
 		defer f.Close()
 
 		log.Printf("[Reader.NewReader] Reading in %s (%.02fmb)...\n", name, sizeMb)
-		data := offheapMalloc(int(fi.Size()))
+		data := offheapMalloc(fi.Size())
 		if _, err := io.ReadFull(f, data); err != nil {
 			log.Printf("[Reader.NewReader] Error reading in %s: %s\n", name, err.Error())
 			return nil, err

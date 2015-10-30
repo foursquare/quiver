@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -135,6 +136,34 @@ func localCache(url, cache string) string {
 func fetch(cfg *CollectionConfig, canBypassDisk bool) error {
 	log.Printf("[FetchRemote] Fetching %s: %s -> %s.", cfg.Name, cfg.SourcePath, cfg.LocalPath)
 
+	canBypassDisk = canBypassDisk && cfg.LoadMethod == CopiedToMem
+	prealloc := int64(0)
+
+	if canBypassDisk && strings.Contains(cfg.SourcePath, "webhdfs") {
+		statusUrl := strings.Replace(cfg.SourcePath, "op=open", "op=getfilestatus", 1)
+		log.Println("[FetchRemote] Path appears to be webhdfs. Attempting to getfilestatus first for", cfg.Name, statusUrl)
+
+		statResp, err := http.Get(statusUrl)
+
+		if err != nil {
+			log.Println("[FetchRemote] getfilestatus failed for", cfg.Name, statusUrl, err)
+		} else {
+			defer statResp.Body.Close()
+			stat := struct{ FileStatus struct{ Length int64 } }{}
+
+			statData, err := ioutil.ReadAll(statResp.Body)
+
+			if err != nil {
+				log.Println("[FetchRemote] Reading file status failed", cfg.Name, err)
+			} else if err = json.Unmarshal(statData, &stat); err != nil {
+				log.Println("[FetchRemote] Parsing file status failed", cfg.Name, err)
+			} else {
+				log.Println("[FetchRemote] Got file length for", cfg.Name, stat.FileStatus.Length)
+				prealloc = stat.FileStatus.Length
+			}
+		}
+	}
+
 	resp, err := http.Get(cfg.SourcePath)
 	if err != nil {
 		return err
@@ -153,20 +182,21 @@ func fetch(cfg *CollectionConfig, canBypassDisk bool) error {
 
 	sz := int64(0)
 
-	if canBypassDisk && resp.ContentLength <= 0 {
-		log.Println("[FetchRemote] Cannot bypass writing to disk due to bad content length", resp.ContentLength)
-		canBypassDisk = false
+	if prealloc == 0 {
+		prealloc = resp.ContentLength
 	}
 
-	if canBypassDisk && cfg.LoadMethod == CopiedToMem {
-		buf := offheapMalloc(resp.ContentLength)
+	if prealloc <= 0 {
+		canBypassDisk = false
+		log.Println("[FetchRemote] Cannot bypass writing to disk due to bad content length", prealloc)
+	}
+
+	if canBypassDisk {
+		buf := offheapMalloc(prealloc)
 		read, err := io.ReadFull(resp.Body, buf)
 		if err != nil {
 			fp.Close()
 			return err
-		}
-		if read != int(resp.ContentLength) {
-			log.Printf("[FetchRemote] Uh-oh: read %d bytes, but Content-Length was %d", read, resp.ContentLength)
 		}
 		sz = int64(read / (1024 * 1024))
 		cfg.cachedContent = &buf

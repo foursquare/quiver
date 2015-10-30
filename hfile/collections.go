@@ -65,7 +65,7 @@ func LoadCollections(collections []*CollectionConfig, cache string, downloadOnly
 		return nil, fmt.Errorf("no collections to load!")
 	}
 
-	if err := downloadCollections(collections, cache, stats); err != nil {
+	if err := downloadCollections(collections, cache, stats, !downloadOnly); err != nil {
 		log.Println("[LoadCollections] Error fetching collections: ", err)
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func LoadCollections(collections []*CollectionConfig, cache string, downloadOnly
 	return cs, nil
 }
 
-func downloadCollections(collections []*CollectionConfig, cache string, stats *report.Recorder) error {
+func downloadCollections(collections []*CollectionConfig, cache string, stats *report.Recorder, canBypassDisk bool) error {
 	if stats != nil {
 		t := time.Now()
 		defer stats.TimeSince("startup.download", t)
@@ -110,7 +110,7 @@ func downloadCollections(collections []*CollectionConfig, cache string, stats *r
 			} else if !os.IsNotExist(err) {
 				return err
 			} else {
-				err = fetch(cfg)
+				err = fetch(cfg, canBypassDisk)
 				if err != nil {
 					return err
 				}
@@ -130,7 +130,7 @@ func localCache(url, cache string) string {
 	return path.Join(cache, name)
 }
 
-func fetch(cfg *CollectionConfig) error {
+func fetch(cfg *CollectionConfig, canBypassDisk bool) error {
 	log.Printf("[FetchRemote] Fetching %s: %s -> %s.", cfg.Name, cfg.SourcePath, cfg.LocalPath)
 
 	fp, err := os.Create(cfg.LocalPath)
@@ -152,7 +152,12 @@ func fetch(cfg *CollectionConfig) error {
 
 	sz := int64(0)
 
-	if cfg.LoadMethod == CopiedToMem && resp.ContentLength > 0 {
+	if canBypassDisk && resp.ContentLength <= 0 {
+		log.Println("[FetchRemote] Cannot bypass writing to disk due to bad content length", resp.ContentLength)
+		canBypassDisk = false
+	}
+
+	if canBypassDisk && cfg.LoadMethod == CopiedToMem {
 		buf := offheapMalloc(resp.ContentLength)
 		read, err := io.ReadFull(resp.Body, buf)
 		if err != nil {
@@ -163,6 +168,8 @@ func fetch(cfg *CollectionConfig) error {
 		}
 		sz = int64(read / (1024 * 1024))
 		cfg.cachedContent = &buf
+
+		// Flush the file out to local cache for later use.
 		go func() {
 			log.Printf("[FetchRemote] Flushing %s (%dmb) to disk...\n", cfg.Name, sz)
 			if wrote, err := fp.Write(buf); err != nil {

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Daniel Harrison
+// Copyright (C) 2014 Foursquare Labs Inc.
 
 package hfile
 
@@ -24,14 +24,14 @@ type Reader struct {
 	majorVersion uint32
 	minorVersion uint32
 
-	Header
+	Trailer
 	index []Block
 
 	scannerCache  chan *Scanner
 	iteratorCache chan *Iterator
 }
 
-type Header struct {
+type Trailer struct {
 	offset int
 
 	fileInfoOffset             uint64
@@ -70,7 +70,7 @@ func NewReaderFromConfig(cfg CollectionConfig) (*Reader, error) {
 	hfile.majorVersion = v & 0x00ffffff
 	hfile.minorVersion = v >> 24
 
-	err := hfile.readHeader(hfile.data)
+	err := hfile.readTrailer(hfile.data)
 	if err != nil {
 		return nil, err
 	}
@@ -97,18 +97,18 @@ func (r *Reader) PrintDebugInfo(out io.Writer, includeStartKeys int) {
 	}
 }
 
-func (r *Reader) readHeader(data []byte) error {
+func (r *Reader) readTrailer(data []byte) error {
 	if r.majorVersion != 1 || r.minorVersion != 0 {
 		return fmt.Errorf("wrong version: %d.%d", r.majorVersion, r.minorVersion)
 	}
 
-	r.Header.offset = len(data) - 60
-	buf := bytes.NewReader(data[r.Header.offset:])
+	r.Trailer.offset = len(data) - 60
+	buf := bytes.NewReader(data[r.Trailer.offset:])
 
-	headerMagic := make([]byte, 8)
-	buf.Read(headerMagic)
-	if bytes.Compare(headerMagic, TrailerMagic) != 0 {
-		return errors.New("bad header magic")
+	trailerMagic := make([]byte, 8)
+	buf.Read(trailerMagic)
+	if bytes.Compare(trailerMagic, TrailerMagic) != 0 {
+		return errors.New("bad trailer magic")
 	}
 
 	binary.Read(buf, binary.BigEndian, &r.fileInfoOffset)
@@ -126,7 +126,7 @@ func (r *Reader) loadIndex(data []byte) error {
 
 	dataIndexEnd := r.metaIndexOffset
 	if r.metaIndexOffset == 0 {
-		dataIndexEnd = uint64(r.Header.offset)
+		dataIndexEnd = uint64(r.Trailer.offset)
 	}
 
 	i := r.dataIndexOffset

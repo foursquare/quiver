@@ -26,7 +26,7 @@ type Writer struct {
 	curBlockFirstKey []byte
 
 	blocks []Block
-	header Header
+	trailer Trailer
 
 	OrderedOps
 }
@@ -49,9 +49,9 @@ func NewWriter(out io.WriteCloser, compress bool, blockSize int, debug bool) (*W
 	w.OrderedOps = OrderedOps{nil}
 
 	if compress {
-		w.header.compressionCodec = CompressionSnappy
+		w.trailer.compressionCodec = CompressionSnappy
 	} else {
-		w.header.compressionCodec = CompressionNone
+		w.trailer.compressionCodec = CompressionNone
 	}
 
 	return w, nil
@@ -76,7 +76,7 @@ func (w *Writer) Write(k, v []byte) error {
 	if _, err := w.curBlockBuf.Write(v); err != nil {
 		return err
 	}
-	w.header.EntryCount += 1
+	w.trailer.EntryCount += 1
 	return nil
 }
 
@@ -124,7 +124,7 @@ func (w *Writer) Close() error {
 		return err
 	}
 
-	if err := w.flushHeader(); err != nil {
+	if err := w.flushTrailer(); err != nil {
 		return err
 	}
 
@@ -138,12 +138,12 @@ func (w *Writer) Close() error {
 
 func (w *Writer) flushBlock() error {
 	if w.debug {
-		log.Printf("[Writer.flushBlock] flushing block %d (%d keys, %db)", len(w.blocks), w.header.EntryCount, w.curBlockBuf.Len())
+		log.Printf("[Writer.flushBlock] flushing block %d (%d keys, %db)", len(w.blocks), w.trailer.EntryCount, w.curBlockBuf.Len())
 	}
 	block := Block{w.curOffset, uint32(w.curBlockBuf.Len()), w.curBlockFirstKey}
-	w.header.totalUncompressedDataBytes += uint64(w.curBlockBuf.Len())
+	w.trailer.totalUncompressedDataBytes += uint64(w.curBlockBuf.Len())
 
-	switch w.header.compressionCodec {
+	switch w.trailer.compressionCodec {
 	case CompressionNone:
 		if i, err := w.curBlockBuf.WriteTo(w.fp); err != nil {
 			return err
@@ -177,7 +177,7 @@ func (w *Writer) flushBlock() error {
 		}
 
 	default:
-		return errors.New("Unsupported compression codec " + string(w.header.compressionCodec))
+		return errors.New("Unsupported compression codec " + string(w.trailer.compressionCodec))
 	}
 
 	w.blocks = append(w.blocks, block)
@@ -192,8 +192,8 @@ func writeUvarint(fp io.Writer, i uint64) (int, error) {
 }
 
 func (w *Writer) flushIndex() error {
-	w.header.dataIndexOffset = w.curOffset
-	w.header.dataIndexCount = uint32(len(w.blocks))
+	w.trailer.dataIndexOffset = w.curOffset
+	w.trailer.dataIndexCount = uint32(len(w.blocks))
 
 	w.fp.Write(IndexMagic)
 	w.curOffset += uint64(len(IndexMagic))
@@ -226,45 +226,45 @@ func (w *Writer) flushIndex() error {
 }
 
 func (w *Writer) flushFileInfo() error {
-	w.header.fileInfoOffset = w.curOffset
+	w.trailer.fileInfoOffset = w.curOffset
 	//TODO(davidt): support file info
 	return nil
 }
 
 func (w *Writer) flushMetaIndex() error {
-	w.header.metaIndexOffset = w.curOffset
-	w.header.metaIndexCount = uint32(0)
+	w.trailer.metaIndexOffset = w.curOffset
+	w.trailer.metaIndexCount = uint32(0)
 	return nil
 }
 
-func (w *Writer) flushHeader() error {
+func (w *Writer) flushTrailer() error {
 	w.fp.Write(TrailerMagic)
 
-	if err := binary.Write(w.fp, binary.BigEndian, w.header.fileInfoOffset); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.fileInfoOffset); err != nil {
 		return err
 	}
 
-	if err := binary.Write(w.fp, binary.BigEndian, w.header.dataIndexOffset); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.dataIndexOffset); err != nil {
 		return err
 	}
-	if err := binary.Write(w.fp, binary.BigEndian, w.header.dataIndexCount); err != nil {
-		return err
-	}
-
-	if err := binary.Write(w.fp, binary.BigEndian, w.header.metaIndexOffset); err != nil {
-		return err
-	}
-	if err := binary.Write(w.fp, binary.BigEndian, w.header.metaIndexCount); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.dataIndexCount); err != nil {
 		return err
 	}
 
-	if err := binary.Write(w.fp, binary.BigEndian, w.header.totalUncompressedDataBytes); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.metaIndexOffset); err != nil {
 		return err
 	}
-	if err := binary.Write(w.fp, binary.BigEndian, w.header.EntryCount); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.metaIndexCount); err != nil {
 		return err
 	}
-	if err := binary.Write(w.fp, binary.BigEndian, w.header.compressionCodec); err != nil {
+
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.totalUncompressedDataBytes); err != nil {
+		return err
+	}
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.EntryCount); err != nil {
+		return err
+	}
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.compressionCodec); err != nil {
 		return err
 	}
 	return nil

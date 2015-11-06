@@ -11,7 +11,7 @@ On-disk, an HFile consists of:
   
   - some number of blocks,
   - an index, specifying the offset and length of each block along with its first key
-  - a fixed-size, fixed-layout header (or trailer actually) of metadata
+  - a fixed-size, fixed-layout trailer of metadata
 
 Each block contains some number of key-value pairs, each in the form of two 4-byte sizes `i` and `j`, followed by `i` bytes of key and `j` bytes of value.
 

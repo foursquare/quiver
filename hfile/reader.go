@@ -213,12 +213,15 @@ func (r *Reader) GetBlockBuf(i int, dst []byte) ([]byte, error) {
 	case CompressionNone:
 		dst = r.data[block.offset : block.offset+uint64(block.size)]
 	case CompressionSnappy:
-		uncompressedByteSize := binary.BigEndian.Uint32(r.data[block.offset : block.offset+4])
+		p := block.offset
+		uncompressedByteSize := binary.BigEndian.Uint32(r.data[p : p+4])
+		p += 4
 		if uncompressedByteSize != block.size {
 			return nil, errors.New("mismatched uncompressed block size")
 		}
-		compressedByteSize := binary.BigEndian.Uint32(r.data[block.offset+4 : block.offset+8])
-		compressedBytes := r.data[block.offset+8 : block.offset+8+uint64(compressedByteSize)]
+		compressedByteSize := binary.BigEndian.Uint32(r.data[p : p+4])
+		p += 4
+		compressedBytes := r.data[p : p+uint64(compressedByteSize)]
 		dst, err = snappy.Decode(dst, compressedBytes)
 		if err != nil {
 			return nil, err

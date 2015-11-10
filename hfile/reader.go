@@ -34,14 +34,14 @@ type Reader struct {
 type Trailer struct {
 	offset int
 
-	fileInfoOffset             uint64
-	dataIndexOffset            uint64
-	dataIndexCount             uint32
-	metaIndexOffset            uint64
-	metaIndexCount             uint32
-	totalUncompressedDataBytes uint64
+	FileInfoOffset             uint64
+	DataIndexOffset            uint64
+	DataIndexCount             uint32
+	MetaIndexOffset            uint64
+	MetaIndexCount             uint32
+	TotalUncompressedDataBytes uint64
 	EntryCount                 uint32
-	compressionCodec           uint32
+	CompressionCodec           uint32
 }
 
 type Block struct {
@@ -86,7 +86,7 @@ func NewReaderFromConfig(cfg CollectionConfig) (*Reader, error) {
 
 func (r *Reader) PrintDebugInfo(out io.Writer, includeStartKeys int) {
 	fmt.Fprintln(out, "entries: ", r.EntryCount)
-	fmt.Fprintf(out, "compressed: %v (codec: %d)\n", r.compressionCodec != CompressionNone, r.compressionCodec)
+	fmt.Fprintf(out, "compressed: %v (codec: %d)\n", r.CompressionCodec != CompressionNone, r.CompressionCodec)
 	fmt.Fprintln(out, "blocks: ", len(r.index))
 	for i, blk := range r.index {
 		if i > includeStartKeys {
@@ -111,27 +111,27 @@ func (r *Reader) readTrailer(data []byte) error {
 		return errors.New("bad trailer magic")
 	}
 
-	binary.Read(buf, binary.BigEndian, &r.fileInfoOffset)
-	binary.Read(buf, binary.BigEndian, &r.dataIndexOffset)
-	binary.Read(buf, binary.BigEndian, &r.dataIndexCount)
-	binary.Read(buf, binary.BigEndian, &r.metaIndexOffset)
-	binary.Read(buf, binary.BigEndian, &r.metaIndexCount)
-	binary.Read(buf, binary.BigEndian, &r.totalUncompressedDataBytes)
+	binary.Read(buf, binary.BigEndian, &r.FileInfoOffset)
+	binary.Read(buf, binary.BigEndian, &r.DataIndexOffset)
+	binary.Read(buf, binary.BigEndian, &r.DataIndexCount)
+	binary.Read(buf, binary.BigEndian, &r.MetaIndexOffset)
+	binary.Read(buf, binary.BigEndian, &r.MetaIndexCount)
+	binary.Read(buf, binary.BigEndian, &r.TotalUncompressedDataBytes)
 	binary.Read(buf, binary.BigEndian, &r.EntryCount)
-	binary.Read(buf, binary.BigEndian, &r.compressionCodec)
+	binary.Read(buf, binary.BigEndian, &r.CompressionCodec)
 	return nil
 }
 
 func (r *Reader) loadIndex(data []byte) error {
 
-	dataIndexEnd := r.metaIndexOffset
-	if r.metaIndexOffset == 0 {
+	dataIndexEnd := r.MetaIndexOffset
+	if r.MetaIndexOffset == 0 {
 		dataIndexEnd = uint64(r.Trailer.offset)
 	}
 
-	i := r.dataIndexOffset
+	i := r.DataIndexOffset
 
-	r.index = make([]Block, 0, r.dataIndexCount)
+	r.index = make([]Block, 0, r.DataIndexCount)
 
 	if bytes.Compare(data[i:i+8], IndexMagic) != 0 {
 		return errors.New("bad data index magic")
@@ -209,7 +209,7 @@ func (r *Reader) GetBlockBuf(i int, dst []byte) ([]byte, error) {
 
 	block := r.index[i]
 
-	switch r.compressionCodec {
+	switch r.CompressionCodec {
 	case CompressionNone:
 		dst = r.data[block.offset : block.offset+uint64(block.size)]
 	case CompressionSnappy:
@@ -227,7 +227,7 @@ func (r *Reader) GetBlockBuf(i int, dst []byte) ([]byte, error) {
 			return nil, fmt.Errorf("Wrong size after decompression (snappy sub-blocks?): %d != %d", uncompressedByteSize, len(dst))
 		}
 	default:
-		return nil, errors.New("Unsupported compression codec " + string(r.compressionCodec))
+		return nil, errors.New("Unsupported compression codec " + string(r.CompressionCodec))
 	}
 
 	if bytes.Compare(dst[0:8], DataMagic) != 0 {

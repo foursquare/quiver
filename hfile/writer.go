@@ -49,9 +49,9 @@ func NewWriter(out io.WriteCloser, compress bool, blockSize int, debug bool) (*W
 	w.OrderedOps = OrderedOps{nil}
 
 	if compress {
-		w.trailer.compressionCodec = CompressionSnappy
+		w.trailer.CompressionCodec = CompressionSnappy
 	} else {
-		w.trailer.compressionCodec = CompressionNone
+		w.trailer.CompressionCodec = CompressionNone
 	}
 
 	return w, nil
@@ -141,9 +141,9 @@ func (w *Writer) flushBlock() error {
 		log.Printf("[Writer.flushBlock] flushing block %d (%d keys, %db)", len(w.blocks), w.trailer.EntryCount, w.curBlockBuf.Len())
 	}
 	block := Block{w.curOffset, uint32(w.curBlockBuf.Len()), w.curBlockFirstKey}
-	w.trailer.totalUncompressedDataBytes += uint64(w.curBlockBuf.Len())
+	w.trailer.TotalUncompressedDataBytes += uint64(w.curBlockBuf.Len())
 
-	switch w.trailer.compressionCodec {
+	switch w.trailer.CompressionCodec {
 	case CompressionNone:
 		if i, err := w.curBlockBuf.WriteTo(w.fp); err != nil {
 			return err
@@ -177,7 +177,7 @@ func (w *Writer) flushBlock() error {
 		}
 
 	default:
-		return errors.New("Unsupported compression codec " + string(w.trailer.compressionCodec))
+		return errors.New("Unsupported compression codec " + string(w.trailer.CompressionCodec))
 	}
 
 	w.blocks = append(w.blocks, block)
@@ -192,8 +192,8 @@ func writeUvarint(fp io.Writer, i uint64) (int, error) {
 }
 
 func (w *Writer) flushIndex() error {
-	w.trailer.dataIndexOffset = w.curOffset
-	w.trailer.dataIndexCount = uint32(len(w.blocks))
+	w.trailer.DataIndexOffset = w.curOffset
+	w.trailer.DataIndexCount = uint32(len(w.blocks))
 
 	w.fp.Write(IndexMagic)
 	w.curOffset += uint64(len(IndexMagic))
@@ -226,45 +226,45 @@ func (w *Writer) flushIndex() error {
 }
 
 func (w *Writer) flushFileInfo() error {
-	w.trailer.fileInfoOffset = w.curOffset
+	w.trailer.FileInfoOffset = w.curOffset
 	//TODO(davidt): support file info
 	return nil
 }
 
 func (w *Writer) flushMetaIndex() error {
-	w.trailer.metaIndexOffset = w.curOffset
-	w.trailer.metaIndexCount = uint32(0)
+	w.trailer.MetaIndexOffset = w.curOffset
+	w.trailer.MetaIndexCount = uint32(0)
 	return nil
 }
 
 func (w *Writer) flushTrailer() error {
 	w.fp.Write(TrailerMagic)
 
-	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.fileInfoOffset); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.FileInfoOffset); err != nil {
 		return err
 	}
 
-	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.dataIndexOffset); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.DataIndexOffset); err != nil {
 		return err
 	}
-	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.dataIndexCount); err != nil {
-		return err
-	}
-
-	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.metaIndexOffset); err != nil {
-		return err
-	}
-	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.metaIndexCount); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.DataIndexCount); err != nil {
 		return err
 	}
 
-	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.totalUncompressedDataBytes); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.MetaIndexOffset); err != nil {
+		return err
+	}
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.MetaIndexCount); err != nil {
+		return err
+	}
+
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.TotalUncompressedDataBytes); err != nil {
 		return err
 	}
 	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.EntryCount); err != nil {
 		return err
 	}
-	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.compressionCodec); err != nil {
+	if err := binary.Write(w.fp, binary.BigEndian, w.trailer.CompressionCodec); err != nil {
 		return err
 	}
 	return nil

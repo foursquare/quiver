@@ -28,10 +28,14 @@ func (r *Registrations) Connect() {
 
 	retryPolicy := curator.NewExponentialBackoffRetry(time.Second, 3, 15*time.Second)
 
-	r.zk = curator.NewClient(Settings.zk, retryPolicy)
+	r.zk = curator.NewClientTimeout(Settings.zk, 15*time.Second, 15*time.Second, retryPolicy)
 
 	if err := r.zk.Start(); err != nil {
 		log.Fatal(err)
+	} else if err := r.zk.ZookeeperClient().BlockUntilConnectedOrTimedOut(); err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("Connected to zookeeper: ", r.zk.ZookeeperClient().Connected())
 	}
 }
 

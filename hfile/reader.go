@@ -205,35 +205,60 @@ func (r *Reader) FindBlock(from int, key []byte) int {
 }
 
 func (r *Reader) GetBlockBuf(i int, dst []byte) ([]byte, error) {
-	var err error
-
 	block := r.index[i]
 
 	switch r.CompressionCodec {
 	case CompressionNone:
 		dst = r.data[block.offset : block.offset+uint64(block.size)]
 	case CompressionSnappy:
+		/*
+		   SnappyCompressor internally uses BlockCompressorStream, which writes "blocks" of compressed data.
+
+		   These are NOT the "blocks" in the hfile sense. A "block" of an hfile may, when written by BlockCompressorStream
+		   write out many of what it calls "blocks". To avoid confusion, in this code, we shall call these "subblocks".
+
+		   Unfortunately the confusing usages of "block" do not stop there.
+
+		   BlockCompressorStream described the "blocks" (subblocks) that it writes thus[1]:
+		   "Each block contains the uncompressed length for the block, followed by one or more length-prefixed *blocks* of compressed data." (emphasis mine)
+
+		   Yes, that is a third, distinct, "block".
+
+		   In the hope that we might, with luck, navigate this correctly, we'll refer to these as "chunks" of "subblocks".
+
+		   Thus, reading a "block" of an hfile we read its "subblocks" in a loop, inside of which we, in a nested loop, read the subblock's chunks.
+
+		   1: http://grepcode.com/file/repo1.maven.org/maven2/org.apache.hadoop/hadoop-common/0.22.0/org/apache/hadoop/io/compress/BlockCompressorStream.java?av=f
+		*/
+
 		// If our pre-allocated buffer too small, alloc replacement up front, to make sure Decode doesn't.
 		if len(dst) < int(block.size) {
 			dst = make([]byte, block.size)
 		}
 
-		p := block.offset
-		uncompressedByteSize := binary.BigEndian.Uint32(r.data[p : p+4])
-		p += 4
-		if uncompressedByteSize != block.size {
-			return nil, errors.New("mismatched uncompressed block size")
+		p := int(block.offset)
+		decompressed := 0
+
+		for decompressed < int(block.size) {
+			subblockSize := binary.BigEndian.Uint32(r.data[p : p+4])
+			subblockRead := uint32(0)
+			p += 4
+			for subblockRead < subblockSize {
+				chunkSz := int(binary.BigEndian.Uint32(r.data[p : p+4]))
+				p += 4
+				target := dst[decompressed:]
+				if ret, err := snappy.Decode(target, r.data[p:p+chunkSz]); err != nil {
+					return nil, err
+				} else {
+					decompressed += len(ret)
+					subblockRead += uint32(len(ret))
+					_ = ret // TODO(davidt): check if Decode alloc'ed its own []byte
+				}
+				p += chunkSz
+			}
 		}
-		compressedByteSize := binary.BigEndian.Uint32(r.data[p : p+4])
-		p += 4
-		compressedBytes := r.data[p : p+uint64(compressedByteSize)]
-		dst, err = snappy.Decode(dst, compressedBytes)
-		if err != nil {
-			return nil, err
-		}
-		if len(dst) != int(uncompressedByteSize) {
-			return nil, fmt.Errorf("Wrong size after decompression (snappy sub-blocks?): %d != %d", uncompressedByteSize, len(dst))
-		}
+		dst = dst[:decompressed]
+
 	default:
 		return nil, errors.New("Unsupported compression codec " + string(r.CompressionCodec))
 	}

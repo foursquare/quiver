@@ -213,6 +213,11 @@ func (r *Reader) GetBlockBuf(i int, dst []byte) ([]byte, error) {
 	case CompressionNone:
 		dst = r.data[block.offset : block.offset+uint64(block.size)]
 	case CompressionSnappy:
+		// If our pre-allocated buffer too small, alloc replacement up front, to make sure Decode doesn't.
+		if len(dst) < int(block.size) {
+			dst = make([]byte, block.size)
+		}
+
 		p := block.offset
 		uncompressedByteSize := binary.BigEndian.Uint32(r.data[p : p+4])
 		p += 4

@@ -117,7 +117,7 @@ func main() {
 
 	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)
 
-	http.Handle("/rpc/HFileService", NewHttpRpcHandler(cs, stats))
+	http.Handle("/rpc/HFileService", WrapHttpRpcHandler(cs, stats))
 
 	admin := adminz.New()
 	admin.KillfilePaths(adminz.Killfiles(Settings.port))

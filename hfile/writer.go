@@ -25,7 +25,7 @@ type Writer struct {
 	curBlockBuf      *bytes.Buffer
 	curBlockFirstKey []byte
 
-	blocks []Block
+	blocks  []Block
 	trailer Trailer
 
 	OrderedOps

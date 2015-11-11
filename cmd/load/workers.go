@@ -61,7 +61,6 @@ func (l *Load) sendOne(client *gen.HFileServiceClient, diff *gen.HFileServiceCli
 
 }
 
-
 // Generate and send a random GetValuesSingle request.
 func (l *Load) sendSingle(client *gen.HFileServiceClient, diff *gen.HFileServiceClient) {
 	var wg sync.WaitGroup

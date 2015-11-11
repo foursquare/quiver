@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -136,6 +137,11 @@ func localCache(url, cache string) string {
 func fetch(cfg *CollectionConfig, canBypassDisk bool) error {
 	log.Printf("[FetchRemote] Fetching %s: %s -> %s.", cfg.Name, cfg.SourcePath, cfg.LocalPath)
 
+	destDir := filepath.Dir(cfg.LocalPath)
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return err
+	}
+
 	canBypassDisk = canBypassDisk && cfg.LoadMethod == CopiedToMem
 	prealloc := int64(0)
 
@@ -174,7 +180,7 @@ func fetch(cfg *CollectionConfig, canBypassDisk bool) error {
 	}
 	defer resp.Body.Close()
 
-	fp, err := ioutil.TempFile("", "hfile-download")
+	fp, err := ioutil.TempFile(destDir, "hfile-downloading-")
 	if err != nil {
 		return err
 	}
@@ -216,7 +222,7 @@ func fetch(cfg *CollectionConfig, canBypassDisk bool) error {
 			log.Printf("[BackgoundFlush] Flushed %s (%dmb) to disk.\n", cfg.Name, sz)
 		}()
 		log.Println("[FetchRemote] Started background flush of", cfg.Name)
-		// If we're short on threads, we'll let the 'background' flush go first.
+		// If we're short on threads, we'll let the 'background' flush run first.
 		runtime.Gosched()
 	} else {
 		defer fp.Close()

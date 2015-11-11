@@ -14,6 +14,7 @@ import (
 
 	//"github.com/golang/snappy"
 	"github.com/cockroachdb/c-snappy"
+	"unicode/utf8"
 )
 
 type Reader struct {
@@ -24,11 +25,16 @@ type Reader struct {
 	majorVersion uint32
 	minorVersion uint32
 
+	FileInfo
 	Trailer
 	index []Block
 
 	scannerCache  chan *Scanner
 	iteratorCache chan *Iterator
+}
+
+type FileInfo struct {
+	InfoFields map[string]string // Human-readable fields read from the FileInfo block.
 }
 
 type Trailer struct {
@@ -71,6 +77,11 @@ func NewReaderFromConfig(cfg CollectionConfig) (*Reader, error) {
 	hfile.minorVersion = v >> 24
 
 	err := hfile.readTrailer(hfile.data)
+	if err != nil {
+		return nil, err
+	}
+
+	err = hfile.readFileInfo(hfile.data)
 	if err != nil {
 		return nil, err
 	}
@@ -253,4 +264,65 @@ func (r *Reader) GetIterator() *Iterator {
 	default:
 		return NewIterator(r)
 	}
+}
+
+// Grab a variable-length sequence of bytes from the buffer.
+func varLenBytes(buf *bytes.Reader) ([]byte, error) {
+	// Read the length of the sequence, as a varint.
+	seqLen, err := vint(buf)
+	if err != nil {
+		return nil, err
+	}
+	// Read the sequence itself.
+	seq := make([]byte, seqLen)
+	n, err := buf.Read(seq)
+	if err != nil {
+		return nil, err
+	}
+	if n != seqLen {
+		return nil, errors.New("Buffer too short to read sequence of requested length.")
+	}
+	return seq, nil
+}
+
+// Heuristic to figure out how to print the value in a hopefully human-readable way.
+func printableValue(buf []byte) string {
+	if len(buf) == 4 {
+		return fmt.Sprintf("%d", binary.BigEndian.Uint32(buf))
+	} else if len(buf) == 8 {
+		return fmt.Sprintf("%d", binary.BigEndian.Uint64(buf))
+	} else if utf8.Valid(buf) {
+		return string(buf)
+	} else {
+		return fmt.Sprintf("0x%x", buf)
+	}
+}
+
+// TODO(benjy): Write tests for this, once the writer supports writing the FileInfo block.
+func (r *Reader) readFileInfo(data []byte) (err error) {
+	r.FileInfo.InfoFields = make(map[string]string)
+
+	if r.FileInfoOffset == r.DataIndexOffset {
+		log.Println("[Reader.readFileInfo] No FileInfo block found. Skipping.")
+		return nil
+	}
+
+	buf := bytes.NewReader(data[r.FileInfoOffset:r.DataIndexOffset])
+
+	var entryCount uint32
+	binary.Read(buf, binary.BigEndian, &entryCount)
+
+	for i := uint32(0); i < entryCount; i++ {
+		key, err := varLenBytes(buf)
+		if err != nil {
+			return err
+		}
+		buf.ReadByte() // Skip the one-byte 'id' field.  We don't care about it.
+		val, err := varLenBytes(buf)
+		if err != nil {
+			return err
+		}
+		r.FileInfo.InfoFields[string(key)] = printableValue(val)
+	}
+	return nil
 }

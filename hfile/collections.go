@@ -15,7 +15,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -184,7 +183,7 @@ func fetch(cfg *CollectionConfig, canBypassDisk bool) error {
 	if err != nil {
 		return err
 	}
-	// NB: we don't defer fp.Close here, since we may flush in another goroutine.
+	defer fp.Close()
 
 	sz := int64(0)
 
@@ -199,45 +198,37 @@ func fetch(cfg *CollectionConfig, canBypassDisk bool) error {
 
 	if canBypassDisk {
 		buf := offheapMalloc(prealloc)
-		read, err := io.ReadFull(resp.Body, buf)
-		if err != nil {
-			fp.Close()
-			return err
-		}
-		sz = int64(read / (1024 * 1024))
 		cfg.cachedContent = &buf
 
-		// Flush the file out to local cache for later use.
-		go func() {
-			log.Printf("[BackgoundFlush] Flushing %s (%dmb) to disk...\n", cfg.Name, sz)
-			if wrote, err := fp.Write(buf); err != nil {
-				log.Fatal("[BackgoundFlush] Error flushing ", cfg.Name, ": ", err)
-			} else if wrote != read {
-				log.Printf("[BackgoundFlush] Read %db but wrote %db!\n", read, wrote)
-			} else if err := fp.Close(); err != nil {
-				log.Fatal("[BackgoundFlush] Error flushing ", cfg.Name, ": ", err)
-			} else if err := os.Rename(fp.Name(), cfg.LocalPath); err != nil {
-				log.Fatal("[BackgoundFlush] Error flushing ", cfg.Name, ": ", err)
-			}
-			log.Printf("[BackgoundFlush] Flushed %s (%dmb) to disk.\n", cfg.Name, sz)
-		}()
-		log.Println("[FetchRemote] Started background flush of", cfg.Name)
-		// If we're short on threads, we'll let the 'background' flush run first.
-		runtime.Gosched()
-	} else {
-		defer fp.Close()
-		sz, err = io.Copy(fp, resp.Body)
-		sz = sz / (1024 * 1024)
-		if err != nil {
+		if read, err := io.ReadFull(resp.Body, buf); err != nil {
+			log.Println("[FetchRemote] Error fetching", cfg.Name, err)
 			return err
-		} else if err := fp.Close(); err != nil {
-			log.Fatal("[FetchRemote] Error flushing", cfg.Name, err)
-		} else if err := os.Rename(fp.Name(), cfg.LocalPath); err != nil {
-			log.Fatal("[FetchRemote] Error flushing", cfg.Name, err)
+		} else {
+			sz = int64(read / (1024 * 1024))
 		}
+
+		log.Printf("[FetchRemote] Flushing %s (%dmb) to disk...\n", cfg.Name, sz)
+		if _, err := fp.Write(buf); err != nil {
+			log.Println("[FetchRemote] Error flushing ", cfg.Name, ": ", err)
+			return err
+		}
+	} else {
+		if sz, err = io.Copy(fp, resp.Body); err != nil {
+			log.Fatal("[FetchRemote] Error fetching to disk", cfg.Name, err)
+			return err
+		}
+		sz = sz / (1024 * 1024)
 	}
 
-	log.Printf("[FetchRemote] Fetched %s (%dmb).", cfg.Name, sz)
+	if err := fp.Close(); err != nil {
+		log.Println("[FetchRemote] Error closing downloaded", cfg.Name, ": ", err)
+		return err
+	} else if err := os.Rename(fp.Name(), cfg.LocalPath); err != nil {
+		log.Printf("[FetchRemote] Error moving downloaded %s to destination: %s\n", cfg.Name, err.Error())
+		return err
+	}
+
+	log.Printf("[FetchRemote] Fetched %s (%dmb) and flushed to disk.\n", cfg.Name, sz)
 	return nil
 }
 

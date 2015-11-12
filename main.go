@@ -26,6 +26,8 @@ type SettingDefs struct {
 
 	debug bool
 
+	bloom int
+
 	mlock bool
 
 	configJsonUrl string
@@ -43,6 +45,8 @@ func readSettings() []string {
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 
 	flag.BoolVar(&s.debug, "debug", false, "print more output")
+
+	flag.IntVar(&s.bloom, "bloom", 0, "bloom filter wrong-positive % (or 0 to disable): lower numbers use more RAM but filter more queries.")
 
 	flag.BoolVar(&s.downloadOnly, "download-only", false, "exit after downloading remote files to local cache.")
 
@@ -113,6 +117,15 @@ func main() {
 	if Settings.downloadOnly {
 		// TODO(davidt): stats.MaybeReportNowTo(graphite)
 		return
+	}
+
+	if Settings.bloom > 0 {
+		beforeBloom := time.Now()
+		for _, c := range cs.Collections {
+			log.Println("Calculating bloom filter for", c.Name)
+			c.CalculateBloom(float64(Settings.bloom) / 100)
+		}
+		stats.TimeSince("startup.bloom", beforeBloom)
 	}
 
 	log.Printf("Serving on http://%s:%d/ \n", hostname, Settings.port)

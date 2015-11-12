@@ -13,6 +13,7 @@ import (
 	"sort"
 
 	//"github.com/golang/snappy"
+	"github.com/AndreasBriese/bbloom"
 	"github.com/cockroachdb/c-snappy"
 )
 
@@ -29,6 +30,8 @@ type Reader struct {
 
 	scannerCache  chan *Scanner
 	iteratorCache chan *Iterator
+
+	bloom *bbloom.Bloom
 }
 
 type Trailer struct {
@@ -268,6 +271,22 @@ func (r *Reader) GetBlockBuf(i int, dst []byte) ([]byte, error) {
 	}
 
 	return dst, nil
+}
+
+func (r *Reader) CalculateBloom(falsePosRate float64) error {
+	i := NewIterator(r)
+	bloom := bbloom.New(float64(r.Trailer.EntryCount), falsePosRate)
+	ok, err := i.Next()
+	for ok && err == nil {
+		bloom.Add(i.Key())
+		ok, err = i.Next()
+	}
+	r.bloom = &bloom
+	return err
+}
+
+func (r *Reader) MightContain(key []byte) bool {
+	return r.bloom == nil || r.bloom.Has(key)
 }
 
 func (r *Reader) GetScanner() *Scanner {

@@ -53,6 +53,11 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 			}
 			continue
 		}
+
+		if !hfile.MightContain(key) {
+			continue
+		}
+
 		value, err, ok := reader.GetFirst(key)
 		if err != nil {
 			return nil, err
@@ -93,6 +98,9 @@ func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {
+		if !hfile.MightContain(key) {
+			continue
+		}
 		values, err := reader.GetAll(key)
 		if err != nil {
 			return nil, err

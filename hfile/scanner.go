@@ -45,48 +45,20 @@ func (s *Scanner) blockFor(key []byte) ([]byte, error, bool) {
 	}
 
 	if s.reader.index[s.idx].IsAfter(key) {
-		if s.reader.Debug {
-			log.Printf("[Scanner.blockFor] curBlock after key %s (cur: %d, start: %s)\n",
-				hex.EncodeToString(key),
-				s.idx,
-				hex.EncodeToString(s.reader.index[s.idx].firstKeyBytes),
-			)
-		}
 		return nil, nil, false
 	}
 
 	idx := s.reader.FindBlock(s.idx, key)
-	if s.reader.Debug {
-		log.Printf("[Scanner.blockFor] findBlock (key: %s) picked %d (starts: %s). Cur: %d (starts: %s)\n",
-			hex.EncodeToString(key),
-			idx,
-			hex.EncodeToString(s.reader.index[idx].firstKeyBytes),
-			s.idx,
-			hex.EncodeToString(s.reader.index[s.idx].firstKeyBytes),
-		)
-	}
 
 	if idx != s.idx || s.block == nil { // need to load a new block
 		data, err := s.reader.GetBlockBuf(idx, s.buf)
 		if err != nil {
-			if s.reader.Debug {
-				log.Printf("[Scanner.blockFor] read err %s (key: %s, idx: %d, start: %s)\n",
-					err,
-					hex.EncodeToString(key),
-					idx,
-					hex.EncodeToString(s.reader.index[idx].firstKeyBytes),
-				)
-			}
 			return nil, err, false
 		}
 		i := 8
 		s.pos = &i
 		s.idx = idx
 		s.block = data
-	} else {
-		if s.reader.Debug {
-			log.Println("[Scanner.blockFor] Re-using current block")
-		}
 	}
 
 	return s.block, nil, true

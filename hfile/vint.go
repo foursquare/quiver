@@ -2,6 +2,10 @@
 
 package hfile
 
+import (
+	"bytes"
+)
+
 /*
 Implementation of hadoop's variable-length, signed int:
 http://grepcode.com/file/repo1.maven.org/maven2/org.apache.hadoop/hadoop-common/2.5.0/org/apache/hadoop/io/WritableUtils.java#WritableUtils.readVInt%28java.io.DataInput%29
@@ -56,4 +60,41 @@ func vintAndLen(b []byte) (int, int) {
 		ret = (ret ^ -1)
 	}
 	return ret, count
+}
+
+func vint(r *bytes.Reader) (int, error) {
+	if first, err := r.ReadByte(); err != nil {
+		return -1, err
+	} else {
+		if first < 0x80 {
+			return int(first), nil
+		}
+
+		if first >= 0x90 {
+			return int(first) - 0x100, nil
+		}
+
+		count := 0
+		neg := false
+
+		if first < 0x88 {
+			neg = true
+			count = int(0x88 - first)
+		} else {
+			count = int(0x90 - first)
+		}
+
+		ret := 0
+		for i := 0; i < count; i++ {
+			if b, err := r.ReadByte(); err != nil {
+				return -1, err
+			} else {
+				ret = (ret << 8) | int(b)
+			}
+		}
+		if neg {
+			ret = (ret ^ -1)
+		}
+		return ret, nil
+	}
 }

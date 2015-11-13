@@ -120,7 +120,15 @@ func (w *Writer) Close() error {
 		}
 	}
 
+	if err := w.flushFileInfo(); err != nil {
+		return err
+	}
+
 	if err := w.flushIndex(); err != nil {
+		return err
+	}
+
+	if err := w.flushMetaIndex(); err != nil {
 		return err
 	}
 

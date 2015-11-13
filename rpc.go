@@ -65,11 +65,7 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		if ok {
 			found++
 			if !req.GetCountOnly() {
-				if req.PerKeyValueLimit != nil {
-					res.Values[int32(idx)] = value[:req.GetPerKeyValueLimit()]
-				} else {
-					res.Values[int32(idx)] = value
-				}
+				res.Values[int32(idx)] = value
 			}
 		}
 	}
@@ -107,7 +103,11 @@ func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 		}
 		if len(values) > 0 {
 			found += int32(len(values))
-			res.Values[int32(idx)] = values
+			if req.PerKeyValueLimit != nil {
+				res.Values[int32(idx)] = values[:req.GetPerKeyValueLimit()]
+			} else {
+				res.Values[int32(idx)] = values
+			}
 		}
 	}
 

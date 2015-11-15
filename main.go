@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"time"
 
 	_ "expvar"
@@ -154,6 +155,33 @@ func main() {
 
 	http.HandleFunc("/hfilez", admin.ServicezHandler)
 	http.HandleFunc("/", admin.ServicezHandler)
+
+	http.HandleFunc("/debug/bloom/enable", func(w http.ResponseWriter, r *http.Request) {
+		for _, c := range cs.Collections {
+			c.EnableBloom()
+		}
+	})
+
+	http.HandleFunc("/debug/bloom/disable", func(w http.ResponseWriter, r *http.Request) {
+		for _, c := range cs.Collections {
+			c.DisableBloom()
+		}
+	})
+
+	http.HandleFunc("/debug/bloom/calc", func(w http.ResponseWriter, r *http.Request) {
+		if falsePos, err := strconv.Atoi(r.URL.Query().Get("err")); err != nil {
+			http.Error(w, err.Error(), 400)
+		} else if falsePos > 99 || falsePos < 1 {
+			http.Error(w, "`err` param must be a false pos rate between 0 and 100", 400)
+		} else {
+			admin.Pause()
+			defer admin.Resume()
+			for _, c := range cs.Collections {
+				fmt.Fprintln(w, "Recalculating bloom for", c.Name)
+				c.CalculateBloom(float64(falsePos) / 100)
+			}
+		}
+	})
 
 	admin.Start()
 	stats.TimeSince("startup.total", t)

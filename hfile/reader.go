@@ -33,7 +33,8 @@ type Reader struct {
 	scannerCache  chan *Scanner
 	iteratorCache chan *Iterator
 
-	bloom *bbloom.Bloom
+	disableBloom bool
+	bloom        *bbloom.Bloom
 }
 
 type FileInfo struct {
@@ -296,8 +297,16 @@ func (r *Reader) CalculateBloom(falsePosRate float64) error {
 	return err
 }
 
+func (r *Reader) DisableBloom() {
+	r.disableBloom = true
+}
+
+func (r *Reader) EnableBloom() {
+	r.disableBloom = false
+}
+
 func (r *Reader) MightContain(key []byte) bool {
-	return r.bloom == nil || r.bloom.Has(key)
+	return r.bloom == nil || r.disableBloom || r.bloom.Has(key)
 }
 
 func (r *Reader) GetScanner() *Scanner {

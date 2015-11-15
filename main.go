@@ -20,6 +20,9 @@ import (
 	"github.com/foursquare/quiver/hfile"
 )
 
+var version string = "HEAD?"
+var buildTime string = "unknown?"
+
 type SettingDefs struct {
 	port int
 
@@ -81,7 +84,7 @@ Usage: %s [options] col1=path1 col2=path2 ...
 }
 
 func main() {
-	fmt.Println("max procs:", runtime.GOMAXPROCS(-1))
+	log.Printf("Quiver version %s (built %s, %s).\n\n", version, buildTime, runtime.Version())
 	t := time.Now()
 
 	graphite := report.Flag()

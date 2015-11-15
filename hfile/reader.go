@@ -13,9 +13,10 @@ import (
 	"sort"
 
 	//"github.com/golang/snappy"
+	"unicode/utf8"
+
 	"github.com/AndreasBriese/bbloom"
 	"github.com/cockroachdb/c-snappy"
-	"unicode/utf8"
 )
 
 type Reader struct {

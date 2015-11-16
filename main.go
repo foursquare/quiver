@@ -119,7 +119,7 @@ func main() {
 	}
 
 	if Settings.downloadOnly {
-		// TODO(davidt): stats.MaybeReportNowTo(graphite)
+		stats.FlushNow()
 		return
 	}
 
@@ -185,6 +185,9 @@ func main() {
 			}
 		}
 	})
+
+	runtime.GC()
+	stats.FlushNow()
 
 	admin.Start()
 	stats.TimeSince("startup.total", t)

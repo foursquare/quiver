@@ -6,5 +6,8 @@ LDFLAGS=-X \"main.version=${VERSION}\" -X \"main.buildTime=${BUILD_TIME}\"
 build:
 	go build -ldflags "${LDFLAGS}"
 
-install:
+install: uninstall
 	go install -ldflags "${LDFLAGS}"
+
+uninstall:
+	rm ${GOPATH}/bin/quiver

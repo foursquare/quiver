@@ -23,7 +23,7 @@ func WrapHttpRpcHandler(cs *hfile.CollectionSet, stats *report.Recorder) *thrift
 }
 
 func WrapProcessor(cs *hfile.CollectionSet, stats *report.Recorder) thrift.TProcessor {
-	return thriftrpc.AddLogging(gen.NewHFileServiceProcessor(&ThriftRpcImpl{cs}), stats, false)
+	return thriftrpc.AddLogging(gen.NewHFileServiceProcessor(&ThriftRpcImpl{cs}), stats, Settings.debug)
 }
 
 type ThriftRpcImpl struct {
@@ -290,6 +290,12 @@ func GetCollectionInfo(r *hfile.Reader, keySampleSize int) (*gen.HFileInfo, erro
 }
 
 func (cs *ThriftRpcImpl) getInfo(req *gen.InfoRequest, allowRandom bool) (r []*gen.HFileInfo, err error) {
+	if req == nil {
+		return nil, fmt.Errorf("null request!")
+	}
+	if Settings.debug {
+		log.Println("[GetInfo]", req.GetHfileName())
+	}
 	require := ""
 	if req.IsSetHfileName() {
 		require := req.GetHfileName()

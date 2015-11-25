@@ -66,9 +66,15 @@ func (r *Registrations) Join(hostname, base string, configs []*hfile.CollectionC
 		if err := disco.MaintainRegistrations(); err != nil {
 			log.Fatal(err)
 		}
+		r.existing = append(r.existing, disco)
+
 		s := discovery.NewSimpleServiceInstance(i.Partition, hostname, Settings.port)
 		disco.Register(s)
-		r.existing = append(r.existing, disco)
+
+		if Settings.rpcPort > 0 {
+			raw := discovery.NewSimpleServiceInstance(fmt.Sprintf("%st", i.Partition), hostname, Settings.rpcPort)
+			disco.Register(raw)
+		}
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	_ "expvar"
 	_ "net/http/pprof"
 
+	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/foursquare/fsgo/adminz"
 	"github.com/foursquare/fsgo/report"
 	"github.com/foursquare/quiver/hfile"
@@ -24,7 +25,8 @@ var version string = "HEAD?"
 var buildTime string = "unknown?"
 
 type SettingDefs struct {
-	port int
+	port    int
+	rpcPort int
 
 	downloadOnly bool
 
@@ -47,6 +49,7 @@ var Settings SettingDefs
 func readSettings() []string {
 	s := SettingDefs{}
 	flag.IntVar(&s.port, "port", 9999, "listen port")
+	flag.IntVar(&s.rpcPort, "rpc-port", 0, "listen port for raw thrift rpc (framed tbinary)")
 
 	flag.BoolVar(&s.debug, "debug", false, "print more output")
 
@@ -191,6 +194,22 @@ func main() {
 
 	admin.Start()
 	stats.TimeSince("startup.total", t)
+
+	if Settings.rpcPort > 0 {
+		s, err := NewTRpcServer(fmt.Sprintf(":%d", Settings.rpcPort), WrapProcessor(cs, stats), thrift.NewTBinaryProtocolFactory(true, true))
+		if err != nil {
+			log.Fatalln("Could not open RPC port", Settings.rpcPort, err)
+		} else {
+			if err := s.Listen(); err != nil {
+				log.Fatalln("Failed to listen on RPC port", err)
+			}
+			go func() {
+				log.Fatalln(s.Serve())
+			}()
+			log.Println("Listening for raw RPC on", Settings.rpcPort)
+		}
+
+	}
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", Settings.port), nil))
 }

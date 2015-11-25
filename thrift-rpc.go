@@ -9,7 +9,7 @@ import (
 )
 
 type TRpcServer struct {
-	server thrift.TServer
+	server *thrift.TSimpleServer
 	socket *thrift.TServerSocket
 }
 
@@ -34,7 +34,7 @@ func (t *TRpcServer) Listen() error {
 }
 
 func (t *TRpcServer) Serve() error {
-	return t.server.Serve()
+	return t.server.AcceptLoop()
 }
 
 func (t *TRpcServer) Addr() net.Addr {

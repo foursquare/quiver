@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/foursquare/fsgo/net/httpthrift"
+	"github.com/foursquare/fsgo/net/thriftrpc"
 	"github.com/foursquare/quiver/gen"
 )
 
@@ -35,7 +35,7 @@ func main() {
 		url = "http://" + url
 	}
 
-	recv, send := httpthrift.NewClientProts(url, false)
+	recv, send := thriftrpc.NewClientProts(url, false)
 	client := gen.NewHFileServiceClientProtocol(nil, recv, send)
 
 	r := &gen.InfoRequest{nil, nil}

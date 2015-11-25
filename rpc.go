@@ -10,15 +10,20 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/foursquare/fsgo/net/httpthrift"
+	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/foursquare/fsgo/net/thriftrpc"
 	"github.com/foursquare/fsgo/report"
 	"github.com/foursquare/quiver/gen"
 	"github.com/foursquare/quiver/hfile"
 	"github.com/foursquare/quiver/util"
 )
 
-func WrapHttpRpcHandler(cs *hfile.CollectionSet, stats *report.Recorder) *httpthrift.ThriftOverHTTPHandler {
-	return httpthrift.NewThriftOverHTTPHandler(gen.NewHFileServiceProcessor(&ThriftRpcImpl{cs}), stats)
+func WrapHttpRpcHandler(cs *hfile.CollectionSet, stats *report.Recorder) *thriftrpc.ThriftOverHTTPHandler {
+	return thriftrpc.NewThriftOverHTTPHandler(WrapProcessor(cs, stats), stats)
+}
+
+func WrapProcessor(cs *hfile.CollectionSet, stats *report.Recorder) thrift.TProcessor {
+	return thriftrpc.AddLogging(gen.NewHFileServiceProcessor(&ThriftRpcImpl{cs}), stats, false)
 }
 
 type ThriftRpcImpl struct {

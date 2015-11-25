@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/foursquare/fsgo/net/discovery"
-	"github.com/foursquare/fsgo/net/httpthrift"
+	"github.com/foursquare/fsgo/net/thriftrpc"
 	"github.com/foursquare/fsgo/report"
 	"github.com/foursquare/quiver/gen"
 )
@@ -45,7 +45,7 @@ type Load struct {
 }
 
 func GetQuiverClient(url func() string) *gen.HFileServiceClient {
-	recv, send := httpthrift.NewDynamicClientProts(url, false)
+	recv, send := thriftrpc.NewDynamicClientProts(url, false)
 	return gen.NewHFileServiceClientProtocol(nil, recv, send)
 }
 

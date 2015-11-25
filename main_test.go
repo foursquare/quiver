@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/foursquare/fsgo/net/httpthrift"
+	"github.com/foursquare/fsgo/net/thriftrpc"
 	"github.com/foursquare/quiver/gen"
 )
 
@@ -19,7 +19,7 @@ func DummyServer(t hasFatal, handler *ThriftRpcImpl) *httptest.Server {
 }
 
 func DummyClient(url string, compact bool) *gen.HFileServiceClient {
-	recv, send := httpthrift.NewClientProts(url, compact)
+	recv, send := thriftrpc.NewClientProts(url, compact)
 	return gen.NewHFileServiceClientProtocol(nil, recv, send)
 }
 

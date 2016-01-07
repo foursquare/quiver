@@ -44,7 +44,7 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	defer reader.Release()
 
 	res := new(gen.SingleHFileKeyResponse)
-	res.Values = make(map[int32][]byte)
+	res.Values = make(map[int32][]byte, len(req.SortedKeys))
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {
@@ -95,7 +95,7 @@ func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.
 	defer reader.Release()
 
 	res := new(gen.MultiHFileKeyResponse)
-	res.Values = make(map[int32][][]byte)
+	res.Values = make(map[int32][][]byte, len(req.SortedKeys))
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {

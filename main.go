@@ -144,11 +144,13 @@ func main() {
 
 	admin.Servicez(func() interface{} {
 		return struct {
-			Collections map[string]*hfile.Reader `json:"collections"`
-			Impl        string                   `json:"implementation"`
+			Collections   map[string]*hfile.Reader `json:"collections"`
+			Impl          string                   `json:"implementation"`
+			QuiverVersion string                   `json:"quiver_version"`
 		}{
 			cs.Collections,
 			"quiver",
+			version,
 		}
 	})
 

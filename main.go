@@ -40,8 +40,9 @@ type SettingDefs struct {
 
 	cachePath string
 
-	zk            string
-	discoveryPath string
+	zk             string
+	discoveryPath  string
+	packageVersion string
 }
 
 var Settings SettingDefs
@@ -65,6 +66,8 @@ func readSettings() []string {
 
 	flag.StringVar(&s.zk, "zookeeper", "", "zookeeper")
 	flag.StringVar(&s.discoveryPath, "discovery", "", "service discovery base path")
+
+	flag.StringVar(&s.packageVersion, "package-version", "", "version of the deployed package")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr,
@@ -144,13 +147,15 @@ func main() {
 
 	admin.Servicez(func() interface{} {
 		return struct {
-			Collections   map[string]*hfile.Reader `json:"collections"`
-			Impl          string                   `json:"implementation"`
-			QuiverVersion string                   `json:"quiver_version"`
+			Collections    map[string]*hfile.Reader `json:"collections"`
+			Impl           string                   `json:"implementation"`
+			QuiverVersion  string                   `json:"quiver_version"`
+			PackageVersion string                   `json:"package_version"`
 		}{
 			cs.Collections,
 			"quiver",
 			version,
+			Settings.packageVersion,
 		}
 	})
 

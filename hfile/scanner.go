@@ -69,7 +69,7 @@ func (s *Scanner) GetFirst(key []byte) ([]byte, error, bool) {
 
 	if !ok {
 		if s.reader.Debug {
-			log.Printf("[Scanner.GetFirst] No Block for key: %s (err: %s, found: %s)\n", hex.EncodeToString(key), err, ok)
+			log.Printf("[Scanner.GetFirst] No Block for key: %s (err: %s, found: %t)\n", hex.EncodeToString(key), err, ok)
 		}
 		return nil, err, ok
 	}

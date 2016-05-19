@@ -52,14 +52,14 @@ You can `go get github.com/foursquare/quiver/cmd/load` to install it in your `$G
 ## Go Version and PATH
 Quiver is tested and developed assuming Go 1.5 and `$GOPATH/bin` is on PATH.
 
-_Foursquare engineers_: add [this](https://github.com/dt/shell/blob/master/lang.d/go.sh) to your `bashrc`
+_Foursquare engineers_: add [this](https://gist.github.com/dt/12eea95cc054a2a6018f2ca839e146b9) to your `bashrc`
 
 
 ## C-Snappy and c++11
 The c-snappy dependency uses `-sdt=c++11`, but older gcc versions expect `-std=c++0x`. 
 Override `CXX`, `CPP` and `CC` to point to a newer GCC if your system version is too old.
 
-_Foursquare engineers_: add [this](https://github.com/dt/shell/blob/master/lang.d/cpp-centos.sh) to your `bashrc`
+_Foursquare engineers_: add [this](https://gist.github.com/dt/2befc993d330fe5914ef6283c973d1d8) to your `bashrc`
 
 ## GoImports
 Quiver uses `goimports` formatting (which groups stdlib imports).
@@ -83,6 +83,3 @@ BenchmarkCompressed-8      300000       25106 ns/op       623 B/op       18 allo
 ```
 ## Re-generate Thrift
 Use `./regen.sh` to re-generate the thrift code after making changes to `quiver.thrift`.
-
-# Authors
-  * [David Taylor](http://github.com/dt) (maintainer)

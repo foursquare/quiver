@@ -12,7 +12,7 @@ import (
 	"log"
 	"sort"
 
-	//"golang/snappy"
+	//"github.com/golang/snappy"
 	"unicode/utf8"
 
 	"github.com/AndreasBriese/bbloom"

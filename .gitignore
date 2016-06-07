@@ -31,3 +31,6 @@ _testmain.go
 
 # test data
 /testdata/*.hfile
+
+# vendoring
+/vendor/*/

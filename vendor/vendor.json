@@ -1,0 +1,111 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "QqOnOky/XiZ6bq0akztC9ETtIR4=",
+			"path": "github.com/AndreasBriese/bbloom",
+			"revision": "0320de81a58b973b5187098f4815608711c70f3b",
+			"revisionTime": "2015-11-24T09:34:16Z"
+		},
+		{
+			"checksumSHA1": "9fjpm8WToJWdQRxWTrdy8a8oyk0=",
+			"path": "github.com/apache/thrift/lib/go/thrift",
+			"revision": "e1abc8b2f3aed139f43ee0f9d1eca95b7da4f312",
+			"revisionTime": "2016-06-07T21:24:23Z"
+		},
+		{
+			"checksumSHA1": "YYHn0WltAlAUHKK+2yTlbMAOLzA=",
+			"path": "github.com/bkaradzic/go-lz4",
+			"revision": "74ddf82598bc4745b965729e9c6a463bedd33049",
+			"revisionTime": "2015-08-21T05:43:00Z"
+		},
+		{
+			"checksumSHA1": "8q9mc9QQLyEvZiIg+1JkTN4AHF0=",
+			"origin": "github.com/foursquare/c-snappy",
+			"path": "github.com/cockroachdb/c-snappy",
+			"revision": "06f3a271875696bf6a20ecd60b3d96c0d1fdc6b8",
+			"revisionTime": "2016-06-07T19:43:12Z",
+			"tree": true
+		},
+		{
+			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
+			"revisionTime": "2015-11-05T21:09:06Z"
+		},
+		{
+			"checksumSHA1": "zYnPsNAVm1/ViwCkN++dX2JQhBo=",
+			"path": "github.com/edsrzf/mmap-go",
+			"revision": "935e0e8a636ca4ba70b713f3e38a19e1b77739e8",
+			"revisionTime": "2016-05-12T03:30:02Z"
+		},
+		{
+			"checksumSHA1": "FYQSp21PTNmartFGnrhcRNS5k14=",
+			"path": "github.com/foursquare/curator.go",
+			"revision": "1e6880fe4772986b3b21da77214b95f5c91a5a42",
+			"revisionTime": "2015-11-10T21:17:35Z"
+		},
+		{
+			"checksumSHA1": "vROhUYwZgGycYvt42Wp5ohrkeIA=",
+			"path": "github.com/foursquare/fsgo/adminz",
+			"revision": "216367fddf4b7d4b05a6de78ccd20eeabf055c61",
+			"revisionTime": "2016-01-04T22:05:54Z"
+		},
+		{
+			"checksumSHA1": "yYrfEWSe2kZbVkWy0lXxrZmh0rg=",
+			"path": "github.com/foursquare/fsgo/net/discovery",
+			"revision": "216367fddf4b7d4b05a6de78ccd20eeabf055c61",
+			"revisionTime": "2016-01-04T22:05:54Z"
+		},
+		{
+			"checksumSHA1": "JnJKGU/vrnQkIvx098Pq8eOLmBA=",
+			"path": "github.com/foursquare/fsgo/net/thriftrpc",
+			"revision": "216367fddf4b7d4b05a6de78ccd20eeabf055c61",
+			"revisionTime": "2016-01-04T22:05:54Z"
+		},
+		{
+			"checksumSHA1": "7Iv6Vo0qAZGOHfi0y4GZTcqf4ZQ=",
+			"path": "github.com/foursquare/fsgo/report",
+			"revision": "216367fddf4b7d4b05a6de78ccd20eeabf055c61",
+			"revisionTime": "2016-01-04T22:05:54Z"
+		},
+		{
+			"checksumSHA1": "jelFstKAqZjTsD/7R3a5hgRoF8Y=",
+			"path": "github.com/foursquare/go-metrics",
+			"revision": "304718cefc1a703a3cde605344e48b59a6c186d8",
+			"revisionTime": "2015-09-12T23:06:48Z"
+		},
+		{
+			"checksumSHA1": "W+E/2xXcE1GmJ0Qb784ald0Fn6I=",
+			"path": "github.com/golang/snappy",
+			"revision": "d9eb7a3d35ec988b8585d4a0068e462c27d28380",
+			"revisionTime": "2016-05-29T05:00:41Z"
+		},
+		{
+			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+			"revisionTime": "2016-01-10T10:55:54Z"
+		},
+		{
+			"checksumSHA1": "BQPtSpoc5HVhcMCGA2fMwsfduJ0=",
+			"path": "github.com/samuel/go-zookeeper/zk",
+			"revision": "4b20de542e40ed2b89d65ae195fc20a330919b92",
+			"revisionTime": "2016-05-31T17:39:56Z"
+		},
+		{
+			"checksumSHA1": "1myjT8gKwUI3WNE5a/85jNPL8Fo=",
+			"path": "github.com/satori/go.uuid",
+			"revision": "879c5887cd475cd7864858769793b2ceb0d44feb",
+			"revisionTime": "2016-06-07T14:43:47Z"
+		},
+		{
+			"checksumSHA1": "Bn333k9lTndxU3D6n/G5c+GMcYY=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "8d64eb7173c7753d6419fd4a9caf057398611364",
+			"revisionTime": "2016-05-24T23:42:29Z"
+		}
+	],
+	"rootPath": "github.com/foursquare/quiver"
+}

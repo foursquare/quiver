@@ -14,7 +14,6 @@ import (
 )
 
 func DummyServer(t hasFatal, handler *ThriftRpcImpl) *httptest.Server {
-	Setup(t)
 	return httptest.NewServer(WrapHttpRpcHandler(handler.CollectionSet, nil))
 }
 
@@ -75,6 +74,7 @@ func dummyWorker(t hasFatal, client *gen.HFileServiceClient, work chan *gen.Sing
 }
 
 func TestConcurrentRoundTrip(t *testing.T) {
+	Setup(t)
 	srv := DummyServer(t, compressed)
 	defer srv.Close()
 	time.Sleep(time.Millisecond * 10)
@@ -99,12 +99,12 @@ func TestConcurrentRoundTrip(t *testing.T) {
 }
 
 func BenchmarkTBinaryHTTP(b *testing.B) {
-	b.StopTimer()
+	Setup(b)
 	srv := DummyServer(b, compressed)
 	defer srv.Close()
 	client := DummyClient(srv.URL, false)
 	reqs := GetRandomTestReqs("compressed", b.N, 5, 50000)
-	b.StartTimer()
+	b.ResetTimer()
 
 	for _, req := range reqs {
 		if res, err := client.GetValuesSingle(req); err != nil {
@@ -119,12 +119,12 @@ func BenchmarkTBinaryHTTP(b *testing.B) {
 
 // The same as above except we flip the `compact` flag in the client.
 func BenchmarkTCompactHTTP(b *testing.B) {
-	b.StopTimer()
+	Setup(b)
 	srv := DummyServer(b, compressed)
 	defer srv.Close()
 	client := DummyClient(srv.URL, true)
 	reqs := GetRandomTestReqs("compressed", b.N, 5, 50000)
-	b.StartTimer()
+	b.ResetTimer()
 
 	for _, req := range reqs {
 		if res, err := client.GetValuesSingle(req); err != nil {
@@ -163,7 +163,7 @@ func SetupTrpc(b *testing.B, f thrift.TProtocolFactory) (*TRpcServer, func() *ge
 }
 
 func BenchmarkTBinaryRaw(b *testing.B) {
-	b.StopTimer()
+	Setup(b)
 
 	s, clientFactory := SetupTrpc(b, thrift.NewTBinaryProtocolFactory(true, true))
 	defer s.Close()
@@ -171,7 +171,7 @@ func BenchmarkTBinaryRaw(b *testing.B) {
 
 	reqs := GetRandomTestReqs("compressed", b.N, 5, 50000)
 
-	b.StartTimer()
+	b.ResetTimer()
 
 	for _, req := range reqs {
 		if res, err := client.GetValuesSingle(req); err != nil {
@@ -185,7 +185,7 @@ func BenchmarkTBinaryRaw(b *testing.B) {
 }
 
 func BenchmarkTCompactRaw(b *testing.B) {
-	b.StopTimer()
+	Setup(b)
 
 	s, clientFactory := SetupTrpc(b, thrift.NewTCompactProtocolFactory())
 	defer s.Close()
@@ -193,7 +193,7 @@ func BenchmarkTCompactRaw(b *testing.B) {
 
 	reqs := GetRandomTestReqs("compressed", b.N, 5, 50000)
 
-	b.StartTimer()
+	b.ResetTimer()
 
 	for _, req := range reqs {
 		if res, err := client.GetValuesSingle(req); err != nil {
@@ -207,7 +207,7 @@ func BenchmarkTCompactRaw(b *testing.B) {
 }
 
 func BenchmarkConcurrentHttp(b *testing.B) {
-	b.StopTimer()
+	Setup(b)
 	srv := DummyServer(b, compressed)
 	defer srv.Close()
 
@@ -224,7 +224,7 @@ func BenchmarkConcurrentHttp(b *testing.B) {
 		go dummyWorker(b, DummyClient(srv.URL, false), work, &wg)
 	}
 
-	b.StartTimer()
+	b.ResetTimer()
 
 	for _, req := range reqs {
 		work <- req
@@ -237,7 +237,7 @@ func BenchmarkConcurrentHttp(b *testing.B) {
 }
 
 func BenchmarkConcurrentRaw(b *testing.B) {
-	b.StopTimer()
+	Setup(b)
 
 	s, clientFactory := SetupTrpc(b, thrift.NewTCompactProtocolFactory())
 	defer s.Close()
@@ -250,7 +250,7 @@ func BenchmarkConcurrentRaw(b *testing.B) {
 	for i := 0; i < workers; i++ {
 		go dummyWorker(b, clientFactory(), work, &wg)
 	}
-	b.StartTimer()
+	b.ResetTimer()
 
 	for _, req := range reqs {
 		work <- req

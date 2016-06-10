@@ -57,7 +57,9 @@ func ConfigsFromCommandline(args []string) []*hfile.CollectionConfig {
 		}
 
 		loadMethod := hfile.CopiedToMem
-		if Settings.mlock {
+		if Settings.onDisk {
+			loadMethod = hfile.OnDisk
+		} else if Settings.mlock {
 			loadMethod = hfile.MemlockFile
 		}
 
@@ -99,7 +101,10 @@ func ConfigsFromJsonUrl(url string) []*hfile.CollectionConfig {
 			name := fmt.Sprintf("%s/%d", spec.Collection, spec.Partition)
 
 			loadMethod := hfile.CopiedToMem
-			if Settings.mlock {
+
+			if Settings.onDisk {
+				loadMethod = hfile.OnDisk
+			} else if Settings.mlock {
 				loadMethod = hfile.MemlockFile
 			}
 

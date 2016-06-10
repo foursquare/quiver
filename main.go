@@ -34,7 +34,8 @@ type SettingDefs struct {
 
 	bloom int
 
-	mlock bool
+	mlock  bool
+	onDisk bool
 
 	configJsonUrl string
 
@@ -57,6 +58,8 @@ func readSettings() []string {
 	flag.IntVar(&s.bloom, "bloom", 0, "bloom filter wrong-positive % (or 0 to disable): lower numbers use more RAM but filter more queries.")
 
 	flag.BoolVar(&s.downloadOnly, "download-only", false, "exit after downloading remote files to local cache.")
+
+	flag.BoolVar(&s.onDisk, "mnolock", false, "mmap files in memory rather than copy to heap, but don't mlock.")
 
 	flag.BoolVar(&s.mlock, "mlock", false, "mlock mapped files in memory rather than copy to heap.")
 

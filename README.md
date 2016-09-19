@@ -3,7 +3,7 @@
 
 A light-weight server for querying immutable data stored in HFiles.
 
-Quiver provides a low-latency server that can be run directly top of large, generated datasets, such as those commonly output by offline / "big data" pipelines, as an alternative to trying to bulk-load their output back into a mutable databases.
+Quiver provides a low-latency server that can be run directly top of large, generated datasets, such as those commonly output by offline / "big data" pipelines, as an alternative to trying to bulk-load their output back into a mutable database.
 
 ## Protocol
 Quiver uses Thrift-RPC-over-HTTP to communicate - standard Thrift RPC calls are encoded and sent as HTTP request/response bodies. This allows any off-the-shelf http tools (eg HAProxy) to interact with this thrift-RPC traffic.

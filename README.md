@@ -54,6 +54,19 @@ Quiver is tested and developed assuming Go 1.5 and `$GOPATH/bin` is on PATH.
 
 _Foursquare engineers_: add [this](https://gist.github.com/dt/12eea95cc054a2a6018f2ca839e146b9) to your `bashrc`
 
+## First-time Setup
+You will need to install [govendor](https://github.com/kardianos/govendor):
+
+`go get github.com/kardianos/govendor`
+
+Then for first-time setup and whenever the vendored dependencies change, run:
+
+`govendor sync`
+
+## Building Quiver
+To build Quiver, run:
+
+`go build`
 
 ## C-Snappy and c++11
 The c-snappy dependency uses `-sdt=c++11`, but older gcc versions expect `-std=c++0x`. 

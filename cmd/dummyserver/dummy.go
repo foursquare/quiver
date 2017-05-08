@@ -14,7 +14,7 @@ import (
 	_ "expvar"
 	_ "net/http/pprof"
 
-	"github.com/foursquare/go-metrics"
+	"github.com/rcrowley/go-metrics"
 )
 
 var timer metrics.Timer

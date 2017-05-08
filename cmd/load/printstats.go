@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/foursquare/fsgo/report"
-	"github.com/foursquare/go-metrics"
+	"github.com/rcrowley/go-metrics"
 )
 
 const CLR_0 = "\x1b[0m"

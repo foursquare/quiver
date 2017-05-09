@@ -15,10 +15,10 @@
 			"revisionTime": "2016-06-07T21:24:23Z"
 		},
 		{
-			"checksumSHA1": "YYHn0WltAlAUHKK+2yTlbMAOLzA=",
+			"checksumSHA1": "fgxkKPz4jLzKDSg0Gmx1G0rPOWY=",
 			"path": "github.com/bkaradzic/go-lz4",
-			"revision": "74ddf82598bc4745b965729e9c6a463bedd33049",
-			"revisionTime": "2015-08-21T05:43:00Z"
+			"revision": "7224d8d8f27ef618c0a95f1ae69dbb0488abc33a",
+			"revisionTime": "2016-09-24T22:28:19Z"
 		},
 		{
 			"checksumSHA1": "8q9mc9QQLyEvZiIg+1JkTN4AHF0=",
@@ -29,10 +29,16 @@
 			"tree": true
 		},
 		{
-			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
+			"checksumSHA1": "VhnlgU/Rwo7Q5VVDg9ZHfqQ6xMk=",
+			"path": "github.com/curator-go/curator",
+			"revision": "3844cf4b76fd7c67981c6be153cadd9d054ea03c",
+			"revisionTime": "2016-09-29T17:55:39Z"
+		},
+		{
+			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
 			"path": "github.com/davecgh/go-spew/spew",
-			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
-			"revisionTime": "2015-11-05T21:09:06Z"
+			"revision": "346938d642f2ec3594ed81d874461961cd0faa76",
+			"revisionTime": "2016-10-29T20:57:26Z"
 		},
 		{
 			"checksumSHA1": "zYnPsNAVm1/ViwCkN++dX2JQhBo=",
@@ -41,40 +47,28 @@
 			"revisionTime": "2016-05-12T03:30:02Z"
 		},
 		{
-			"checksumSHA1": "FYQSp21PTNmartFGnrhcRNS5k14=",
-			"path": "github.com/foursquare/curator.go",
-			"revision": "1e6880fe4772986b3b21da77214b95f5c91a5a42",
-			"revisionTime": "2015-11-10T21:17:35Z"
-		},
-		{
 			"checksumSHA1": "TphU5A/IEe9u60gUdAwDgbgDKyY=",
 			"path": "github.com/foursquare/fsgo/adminz",
-			"revision": "11ab6c1efb3753245e81b30ea87232bf3c3a2a72",
-			"revisionTime": "2017-04-28T23:31:35Z"
+			"revision": "02108c05e869be112b3b5786511fb0caef534eb1",
+			"revisionTime": "2017-05-09T15:16:33Z"
 		},
 		{
-			"checksumSHA1": "yYrfEWSe2kZbVkWy0lXxrZmh0rg=",
+			"checksumSHA1": "z69jLANwad+w4oGoatpmiVHMWbc=",
 			"path": "github.com/foursquare/fsgo/net/discovery",
-			"revision": "216367fddf4b7d4b05a6de78ccd20eeabf055c61",
-			"revisionTime": "2016-01-04T22:05:54Z"
+			"revision": "02108c05e869be112b3b5786511fb0caef534eb1",
+			"revisionTime": "2017-05-09T15:16:33Z"
 		},
 		{
 			"checksumSHA1": "JnJKGU/vrnQkIvx098Pq8eOLmBA=",
 			"path": "github.com/foursquare/fsgo/net/thriftrpc",
-			"revision": "216367fddf4b7d4b05a6de78ccd20eeabf055c61",
-			"revisionTime": "2016-01-04T22:05:54Z"
+			"revision": "02108c05e869be112b3b5786511fb0caef534eb1",
+			"revisionTime": "2017-05-09T15:16:33Z"
 		},
 		{
-			"checksumSHA1": "7Iv6Vo0qAZGOHfi0y4GZTcqf4ZQ=",
+			"checksumSHA1": "cb5U8H1yyDX92OuSNCyUKdo+oEw=",
 			"path": "github.com/foursquare/fsgo/report",
-			"revision": "216367fddf4b7d4b05a6de78ccd20eeabf055c61",
-			"revisionTime": "2016-01-04T22:05:54Z"
-		},
-		{
-			"checksumSHA1": "jelFstKAqZjTsD/7R3a5hgRoF8Y=",
-			"path": "github.com/foursquare/go-metrics",
-			"revision": "304718cefc1a703a3cde605344e48b59a6c186d8",
-			"revisionTime": "2015-09-12T23:06:48Z"
+			"revision": "02108c05e869be112b3b5786511fb0caef534eb1",
+			"revisionTime": "2017-05-09T15:16:33Z"
 		},
 		{
 			"checksumSHA1": "W+E/2xXcE1GmJ0Qb784ald0Fn6I=",
@@ -89,6 +83,12 @@
 			"revisionTime": "2016-01-10T10:55:54Z"
 		},
 		{
+			"checksumSHA1": "KAzbLjI9MzW2tjfcAsK75lVRp6I=",
+			"path": "github.com/rcrowley/go-metrics",
+			"revision": "1f30fe9094a513ce4c700b9a54458bbb0c96996c",
+			"revisionTime": "2016-11-28T21:05:44Z"
+		},
+		{
 			"checksumSHA1": "BQPtSpoc5HVhcMCGA2fMwsfduJ0=",
 			"path": "github.com/samuel/go-zookeeper/zk",
 			"revision": "4b20de542e40ed2b89d65ae195fc20a330919b92",
@@ -101,10 +101,34 @@
 			"revisionTime": "2016-06-07T14:43:47Z"
 		},
 		{
-			"checksumSHA1": "Bn333k9lTndxU3D6n/G5c+GMcYY=",
+			"checksumSHA1": "K0crHygPTP42i1nLKWphSlvOQJw=",
+			"path": "github.com/stretchr/objx",
+			"revision": "1a9d0bb9f541897e62256577b352fdbc1fb4fd94",
+			"revisionTime": "2015-09-28T12:21:52Z"
+		},
+		{
+			"checksumSHA1": "JXUVA1jky8ZX8w09p2t5KLs97Nc=",
 			"path": "github.com/stretchr/testify/assert",
-			"revision": "8d64eb7173c7753d6419fd4a9caf057398611364",
-			"revisionTime": "2016-05-24T23:42:29Z"
+			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
+			"revisionTime": "2017-01-30T11:31:45Z"
+		},
+		{
+			"checksumSHA1": "WGwMB6WljaeGKzuNCX5M4E8LADE=",
+			"path": "github.com/stretchr/testify/mock",
+			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
+			"revisionTime": "2017-01-30T11:31:45Z"
+		},
+		{
+			"checksumSHA1": "2PpOCNkWnshDrXeCVH2kp3VHhIM=",
+			"path": "github.com/stretchr/testify/require",
+			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
+			"revisionTime": "2017-01-30T11:31:45Z"
+		},
+		{
+			"checksumSHA1": "Dp8TnT65nINpRF/PrxrgmnYLsyA=",
+			"path": "github.com/stretchr/testify/suite",
+			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
+			"revisionTime": "2017-01-30T11:31:45Z"
 		}
 	],
 	"rootPath": "github.com/foursquare/quiver"

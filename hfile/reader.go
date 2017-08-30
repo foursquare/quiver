@@ -12,11 +12,9 @@ import (
 	"log"
 	"sort"
 
-	//"github.com/golang/snappy"
 	"unicode/utf8"
 
 	"github.com/AndreasBriese/bbloom"
-	"github.com/cockroachdb/c-snappy"
 )
 
 type Reader struct {
@@ -263,7 +261,7 @@ func (r *Reader) GetBlockBuf(i int, dst []byte) ([]byte, error) {
 				chunkSz := int(binary.BigEndian.Uint32(r.data[p : p+4]))
 				p += 4
 				target := dst[decompressed:]
-				if ret, err := snappy.Decode(target, r.data[p:p+chunkSz]); err != nil {
+				if ret, err := snappyDecode(target, r.data[p:p+chunkSz]); err != nil {
 					return nil, err
 				} else {
 					decompressed += len(ret)

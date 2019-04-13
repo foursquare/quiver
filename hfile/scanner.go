@@ -89,7 +89,7 @@ func (s *Scanner) GetAll(key []byte) ([][]byte, error) {
 
 	if !ok {
 		if s.reader.Debug {
-			log.Printf("[Scanner.GetAll] No Block for key: %s (err: %s, found: %s)\n", hex.EncodeToString(key), err, ok)
+			log.Printf("[Scanner.GetAll] No Block for key: %s (err: %s, found: %v)\n", hex.EncodeToString(key), err, ok)
 		}
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -18,15 +19,20 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/foursquare/fsgo/adminz"
 	"github.com/foursquare/fsgo/report"
+	pb "github.com/foursquare/quiver/gen_proto"
 	"github.com/foursquare/quiver/hfile"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 var version string = "HEAD?"
 var buildTime string = "unknown?"
 
 type SettingDefs struct {
-	port    int
-	rpcPort int
+	port     int
+	rpcPort  int
+	grpcPort int
 
 	downloadOnly bool
 
@@ -52,6 +58,7 @@ func readSettings() []string {
 	s := SettingDefs{}
 	flag.IntVar(&s.port, "port", 9999, "listen port")
 	flag.IntVar(&s.rpcPort, "rpc-port", 0, "listen port for raw thrift rpc (framed tbinary)")
+	flag.IntVar(&s.grpcPort, "grpc-port", 0, "listen port for gRPC")
 
 	flag.BoolVar(&s.debug, "debug", false, "print more output")
 
@@ -219,6 +226,20 @@ func main() {
 			log.Println("Listening for raw RPC on", Settings.rpcPort)
 		}
 
+	}
+
+	if Settings.grpcPort > 0 {
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", Settings.grpcPort))
+		if err != nil {
+			log.Fatalf("failed to listen on gRPC port %d: %v", Settings.grpcPort, err)
+		}
+		s := grpc.NewServer()
+		pb.RegisterQuiverServiceServer(s, &GrpcImpl{&RpcShared{cs}})
+		reflection.Register(s)
+		go func() {
+			log.Fatalln(s.Serve(lis))
+		}()
+		log.Println("Listening for gRPC on", Settings.grpcPort)
 	}
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", Settings.port), nil))

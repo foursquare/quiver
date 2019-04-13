@@ -10,5 +10,9 @@ echo "Overwriting with new version..."
 cp gen-go/gen/*.go gen/
 echo "Cleaning up..."
 rm -rf gen-go
+
+echo "Generating from gen-proto/quiver.proto..."
+protoc --go_out=plugins=grpc:./ gen_proto/quiver.proto
+
 echo "DIFFS:"
-git diff gen
+git diff gen*

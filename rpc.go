@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -14,8 +15,21 @@ import (
 	"github.com/foursquare/fsgo/net/thriftrpc"
 	"github.com/foursquare/fsgo/report"
 	"github.com/foursquare/quiver/gen"
+	pb "github.com/foursquare/quiver/gen_proto"
 	"github.com/foursquare/quiver/hfile"
 	"github.com/foursquare/quiver/util"
+)
+
+type (
+	RpcShared struct {
+		*hfile.CollectionSet
+	}
+	ThriftRpcImpl struct {
+		*RpcShared
+	}
+	GrpcImpl struct {
+		*RpcShared
+	}
 )
 
 func WrapHttpRpcHandler(cs *hfile.CollectionSet, stats *report.Recorder) *thriftrpc.ThriftOverHTTPHandler {
@@ -23,18 +37,26 @@ func WrapHttpRpcHandler(cs *hfile.CollectionSet, stats *report.Recorder) *thrift
 }
 
 func WrapProcessor(cs *hfile.CollectionSet, stats *report.Recorder) thrift.TProcessor {
-	return thriftrpc.AddLogging(gen.NewHFileServiceProcessor(&ThriftRpcImpl{cs}), stats, Settings.debug)
+	return thriftrpc.AddLogging(gen.NewHFileServiceProcessor(&ThriftRpcImpl{&RpcShared{cs}}), stats, Settings.debug)
 }
 
-type ThriftRpcImpl struct {
-	*hfile.CollectionSet
-}
-
-func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen.SingleHFileKeyResponse, err error) {
-	if Settings.debug {
-		log.Printf("[GetValuesSingle] %s (%d keys)\n", *req.HfileName, len(req.SortedKeys))
+type (
+	SingleHFileKeyRequest struct {
+		HfileName  string
+		SortedKeys [][]byte
+		CountOnly  bool
 	}
-	hfile, err := cs.ReaderFor(*req.HfileName)
+	SingleHFileKeyResponse struct {
+		Values   map[int32][]byte
+		KeyCount int32
+	}
+)
+
+func (cs *RpcShared) GetValuesSingle(req SingleHFileKeyRequest) (*SingleHFileKeyResponse, error) {
+	if Settings.debug {
+		log.Printf("[GetValuesSingle] %s (%d keys)\n", req.HfileName, len(req.SortedKeys))
+	}
+	hfile, err := cs.ReaderFor(req.HfileName)
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +65,9 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 	reader.EnforceKeyOrder = false
 	defer reader.Release()
 
-	res := new(gen.SingleHFileKeyResponse)
-	res.Values = make(map[int32][]byte, len(req.SortedKeys))
+	res := &SingleHFileKeyResponse{
+		Values: make(map[int32][]byte, len(req.SortedKeys)),
+	}
 	found := int32(0)
 
 	for idx, key := range req.SortedKeys {
@@ -69,17 +92,47 @@ func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (r *gen
 		}
 		if ok {
 			found++
-			if !req.GetCountOnly() {
+			if !req.CountOnly {
 				res.Values[int32(idx)] = value
 			}
 		}
 	}
 
 	if Settings.debug {
-		log.Printf("[GetValuesSingle] %s found %d of %d.\n", *req.HfileName, found, len(req.SortedKeys))
+		log.Printf("[GetValuesSingle] %s found %d of %d.\n", req.HfileName, found, len(req.SortedKeys))
 	}
-	res.KeyCount = &found
+	res.KeyCount = found
 	return res, nil
+}
+
+func (g *GrpcImpl) GetValuesSingle(_ context.Context, req *pb.SingleHFileKeyRequest) (*pb.SingleHFileKeyResponse, error) {
+	resp, err := g.RpcShared.GetValuesSingle(SingleHFileKeyRequest{
+		HfileName:  req.HfileName,
+		SortedKeys: req.SortedKeys,
+		CountOnly:  req.CountOnly,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &pb.SingleHFileKeyResponse{
+		Values:   resp.Values,
+		KeyCount: resp.KeyCount,
+	}, nil
+}
+
+func (cs *ThriftRpcImpl) GetValuesSingle(req *gen.SingleHFileKeyRequest) (*gen.SingleHFileKeyResponse, error) {
+	resp, err := cs.RpcShared.GetValuesSingle(SingleHFileKeyRequest{
+		HfileName:  *req.HfileName,
+		SortedKeys: req.SortedKeys,
+		CountOnly:  req.GetCountOnly(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &gen.SingleHFileKeyResponse{
+		Values:   resp.Values,
+		KeyCount: &resp.KeyCount,
+	}, nil
 }
 
 func (cs *ThriftRpcImpl) GetValuesMulti(req *gen.SingleHFileKeyRequest) (r *gen.MultiHFileKeyResponse, err error) {

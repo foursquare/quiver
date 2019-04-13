@@ -211,7 +211,8 @@ func (l *Load) sendPrefixes(client *gen.HFileServiceClient, diff *gen.HFileServi
 						log.Printf("[DIFF-GetValuesForPrefixes] Missing from orig: %s", hex.EncodeToString([]byte(k)))
 					}
 				}
-				log.Println("\n")
+				log.Println()
+				log.Println()
 			} else {
 				log.Printf("[DIFF-GetValuesForPrefixes] req: %v\n \torig: %v\n\n\tdiff: %v\n", r, resp, diffResp)
 			}

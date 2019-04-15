@@ -22,7 +22,7 @@ func removeWebhdfs(s string) string {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: %s hfileserver")
+		fmt.Printf("usage: %s hfileserver\n", os.Args[0])
 		os.Exit(1)
 	}
 

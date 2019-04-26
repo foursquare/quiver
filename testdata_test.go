@@ -30,12 +30,12 @@ func Setup(t hasFatal) {
 	if cs, err := hfile.TestdataCollectionSet("uncompressed", maxKey, false, hfile.CopiedToMem); err != nil {
 		t.Fatal(err)
 	} else {
-		uncompressed = &ThriftRpcImpl{cs}
+		uncompressed = &ThriftRpcImpl{&RpcShared{cs}}
 	}
 	if cs, err := hfile.TestdataCollectionSet("compressed", maxKey, true, hfile.CopiedToMem); err != nil {
 		t.Fatal(err)
 	} else {
-		compressed = &ThriftRpcImpl{cs}
+		compressed = &ThriftRpcImpl{&RpcShared{cs}}
 	}
 }
 
@@ -43,7 +43,7 @@ func SetupMapped(t hasFatal) {
 	if cs, err := hfile.TestdataCollectionSet("compressed", maxKey, true, hfile.MemlockFile); err != nil {
 		t.Fatal(err)
 	} else {
-		compressedMapped = &ThriftRpcImpl{cs}
+		compressedMapped = &ThriftRpcImpl{&RpcShared{cs}}
 	}
 }
 

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package foursquare.quiver.client;
+
+service QuiverService {
+  rpc GetValuesSingle(SingleHFileKeyRequest) returns (SingleHFileKeyResponse) {}
+}
+
+message SingleHFileKeyRequest {
+  string hfile_name = 1;
+  // Keys to look up.
+  // Note: For efficiency, keys must be sorted by the client. If they are not, behavior is undefined.
+  repeated bytes sorted_keys = 2;
+  int32 per_key_value_limit = 3;
+  bool count_only = 4;
+}
+
+message SingleHFileKeyResponse {
+  map<int32, bytes> values = 1;
+  int32 key_count = 2;
+}
